@@ -739,7 +739,7 @@ const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 // ── スプレッドシート記録（GAS Webhook・追記専用） ──
 // GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec';
-function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL; }
+function loadWebhook() { return WEBHOOK_URL || localStorage.getItem('budomari_webhook') || ''; }
 function postToSheet(entry) {
   const url = loadWebhook();
   if (!url) return; // 未設定なら端末内の履歴のみ
@@ -1073,14 +1073,16 @@ document.getElementById('calc-btn').addEventListener('click', calculate);
 document.getElementById('copy-btn').addEventListener('click', copyMessage);
 document.getElementById('clear-btn').addEventListener('click', clearHistory);
 
-// 記録先スプレッドシート（GAS Webhook URL）の設定
+// 記録先スプレッドシート（表示のみ・編集不可）
 document.getElementById('settings-link').addEventListener('click', function(e) {
   e.preventDefault();
-  const cur = loadWebhook();
-  const v = prompt('スプレッドシート記録用のURL（GASのウェブアプリURL）を貼り付けてください。\n空欄にすると記録はこの端末内だけになります。', cur);
-  if (v === null) return;
-  localStorage.setItem('budomari_webhook', v.trim());
-  alert(v.trim() ? 'スプレッドシートへの記録をオンにしました。' : 'スプレッドシートへの記録をオフにしました（端末内のみ）。');
+  const on = !!loadWebhook();
+  alert(
+    '記録先スプレッドシート\n\n' +
+    (on
+      ? '状態：オン（計算するたびに自動でスプレッドシートに記録されます）\n\n※記録先は固定設定のため、ここでは変更できません。'
+      : '状態：オフ（端末内のみ）')
+  );
 });
 
 // Enterキーで計算
