@@ -710,6 +710,10 @@
     © 2025 株式会社若林商店 All Rights Reserved.
   </div>
 
+  <div style="text-align:center;padding:0 16px 24px;">
+    <a href="#" id="settings-link" style="font-size:11px;color:#aab4c8;text-decoration:underline;">⚙ 記録先スプレッドシート設定</a>
+  </div>
+
 </div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -731,6 +735,22 @@ document.getElementById('margin-input').addEventListener('input', function() {
 // ── ログイン処理 ──
 const PASSWORD = '2317';
 const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
+
+// ── スプレッドシート記録（GAS Webhook・追記専用） ──
+// GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
+const WEBHOOK_URL = '';
+function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL; }
+function postToSheet(entry) {
+  const url = loadWebhook();
+  if (!url) return; // 未設定なら端末内の履歴のみ
+  try {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ type: 'add_record', record: entry })
+    }).catch(function() {});
+  } catch (e) {}
+}
 
 // 今月のキー（例：2026-04）
 function thisMonth() {
@@ -892,6 +912,9 @@ function calculate() {
   if (history.length > 20) history = history.slice(0, 20);
   localStorage.setItem('budomari_history', JSON.stringify(history));
   renderHistory();
+
+  // スプレッドシートにも記録（追記専用・台帳兼バックアップ）
+  postToSheet(entry);
 }
 
 function copyMessage() {
@@ -1034,6 +1057,12 @@ function loadHistory(i) {
 }
 
 function clearHistory() {
+  const linked = !!loadWebhook();
+  const recoverNote = linked
+    ? '\n\n💾 この端末の表示が消えるだけで、スプレッドシートには記録が残っています。あとで確認・復旧できます。'
+    : '\n\n⚠️ スプレッドシート連携が未設定のため、消すと元に戻せません。';
+  if (!confirm('⚠️ 計算履歴をすべて削除します。\n本当によろしいですか？' + recoverNote)) return;
+  if (!confirm('⚠️ 最終確認です。\nこの操作は取り消せません。\n\nすべての履歴を削除しますか？')) return;
   history = [];
   localStorage.setItem('budomari_history', '[]');
   renderHistory();
@@ -1043,6 +1072,16 @@ function clearHistory() {
 document.getElementById('calc-btn').addEventListener('click', calculate);
 document.getElementById('copy-btn').addEventListener('click', copyMessage);
 document.getElementById('clear-btn').addEventListener('click', clearHistory);
+
+// 記録先スプレッドシート（GAS Webhook URL）の設定
+document.getElementById('settings-link').addEventListener('click', function(e) {
+  e.preventDefault();
+  const cur = loadWebhook();
+  const v = prompt('スプレッドシート記録用のURL（GASのウェブアプリURL）を貼り付けてください。\n空欄にすると記録はこの端末内だけになります。', cur);
+  if (v === null) return;
+  localStorage.setItem('budomari_webhook', v.trim());
+  alert(v.trim() ? 'スプレッドシートへの記録をオンにしました。' : 'スプレッドシートへの記録をオフにしました（端末内のみ）。');
+});
 
 // Enterキーで計算
 document.querySelectorAll('input').forEach(inp => {
