@@ -738,7 +738,7 @@ const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 
 // ── スプレッドシート記録（GAS Webhook・追記専用） ──
 // GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
-const WEBHOOK_URL = '';
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec';
 function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL; }
 function postToSheet(entry) {
   const url = loadWebhook();
