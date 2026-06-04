@@ -688,6 +688,8 @@
     <button class="calc-btn" id="calc-btn">
       <span>📊</span> 計算する
     </button>
+    <button class="clear-btn" id="newlot-btn" style="margin-top:8px;">🆕 新しいロット（入力をクリア）</button>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.6;">入力はすべて自動保存されます。閉じても続きから入力できます。</div>
   </div>
 
   <!-- 結果 -->
@@ -862,6 +864,37 @@ let branchItems = JSON.parse(localStorage.getItem('budomari_branchItems') || '[]
   });
   applyToField();   // 起動時に保存済み枝重を反映
 })();
+
+// ── 入力途中の自動保存（下書き）：加重平均・出来上がりも打った瞬間に保存 ──
+const DRAFT_FIELDS = ['weighted-price','output-set','output-ham','output-parts'];
+function saveDraft(){
+  const d = {};
+  DRAFT_FIELDS.forEach(function(id){ d[id] = document.getElementById(id).value; });
+  d.type = currentType;
+  localStorage.setItem('budomari_draft', JSON.stringify(d));
+}
+function restoreDraft(){
+  try {
+    const d = JSON.parse(localStorage.getItem('budomari_draft') || '{}');
+    DRAFT_FIELDS.forEach(function(id){ if (d[id] != null) document.getElementById(id).value = d[id]; });
+    if (d.type) {
+      currentType = d.type;
+      document.querySelectorAll('.type-btn').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-type') === d.type); });
+    }
+  } catch(e){}
+}
+DRAFT_FIELDS.forEach(function(id){ document.getElementById(id).addEventListener('input', saveDraft); });
+document.querySelectorAll('.type-btn').forEach(function(btn){ btn.addEventListener('click', function(){ setTimeout(saveDraft, 0); }); });
+restoreDraft();
+
+// 新しいロット（下書き・枝重をクリア／粗利は維持）
+document.getElementById('newlot-btn').addEventListener('click', function(){
+  if (!confirm('入力中の内容をクリアして新しいロットを始めますか？')) return;
+  localStorage.removeItem('budomari_draft');
+  DRAFT_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
+  window.__setBranchItems([]);
+  document.getElementById('results-area').style.display = 'none';
+});
 
 // ── ログイン処理 ──
 const PASSWORD = '2317';
