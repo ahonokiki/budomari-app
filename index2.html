@@ -620,30 +620,7 @@
   <div class="input-card">
     <h2>入力</h2>
 
-    <div class="field">
-      <label>加工料金</label>
-      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
-        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:#aab4c8;">3,500 円/頭（固定）</span>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>頭数</label>
-      <div class="input-row">
-        <input type="number" id="heads" inputmode="decimal" placeholder="" min="0" step="0.5">
-        <span class="unit">頭</span>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>枝重</label>
-      <div class="input-row" id="branch-open" style="cursor:pointer;">
-        <input type="number" id="branch" inputmode="decimal" placeholder="タップして枝重を入力" min="0" step="0.1" readonly style="cursor:pointer; background:transparent;">
-        <span class="unit" id="branch-cnt" style="color:var(--accent2);"></span>
-        <span class="unit">kg ▸</span>
-      </div>
-    </div>
-
+    <!-- ① 加重平均単価 -->
     <div class="field">
       <label>枝肉加重平均単価</label>
       <div class="input-row">
@@ -652,8 +629,29 @@
       </div>
     </div>
 
+    <!-- ② 枝重（タップでキーパッド・1頭ずつ） -->
     <div class="field">
-      <label>出来上がり重量</label>
+      <label>枝重（1頭ずつ入力）</label>
+      <div class="input-row" id="branch-open" style="cursor:pointer;">
+        <input type="number" id="branch" inputmode="decimal" placeholder="タップして枝重を入力" min="0" step="0.1" readonly style="cursor:pointer; background:transparent;">
+        <span class="unit" id="branch-cnt" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+    </div>
+
+    <!-- ③ 頭数（枝重の数で自動）＋加工料金（自動） -->
+    <div class="field">
+      <label>頭数（枝重の数で自動）</label>
+      <input type="hidden" id="heads">
+      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
+        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:var(--accent);" id="heads-disp">0 頭</span>
+        <span class="unit" id="fee-disp" style="color:#aab4c8; white-space:nowrap;">加工料金 0円</span>
+      </div>
+    </div>
+
+    <!-- ④ 出来上がり重量（後日入力） -->
+    <div class="field">
+      <label>出来上がり重量（後日入力）</label>
       <div class="input-row" style="margin-bottom:8px;">
         <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">セット</span>
         <input type="number" id="output-set" inputmode="decimal" placeholder="" min="0" step="0.1">
@@ -825,8 +823,13 @@ let branchItems = JSON.parse(localStorage.getItem('budomari_branchItems') || '[]
   }
   function applyToField(){
     const s = sum();
+    const n = branchItems.length;
     document.getElementById('branch').value = s > 0 ? s.toFixed(1) : '';
-    document.getElementById('branch-cnt').textContent = branchItems.length > 0 ? branchItems.length + '頭' : '';
+    document.getElementById('branch-cnt').textContent = n > 0 ? n + '頭' : '';
+    // 頭数は枝重の数で自動・加工料金(3,500円/頭)も自動表示
+    document.getElementById('heads').value = n;
+    document.getElementById('heads-disp').textContent = n + ' 頭';
+    document.getElementById('fee-disp').textContent = '加工料金 ' + (n * 3500).toLocaleString() + '円';
     localStorage.setItem('budomari_branchItems', JSON.stringify(branchItems));
   }
   // 履歴復元・外部から呼ぶ用
@@ -1169,13 +1172,16 @@ function deleteHistory(i) {
 
 function loadHistory(i) {
   const e = history[i];
-  document.getElementById('heads').value  = e.heads;
   if (e.branchItems && e.branchItems.length) {
-    window.__setBranchItems(e.branchItems);     // 内訳ごと復元
+    window.__setBranchItems(e.branchItems);     // 内訳ごと復元（頭数も自動）
   } else {
     window.__setBranchItems([]);                // 旧データは合計のみ
     document.getElementById('branch').value = e.branch;
     document.getElementById('branch-cnt').textContent = '';
+    // 旧データは頭数を手入力値から復元
+    document.getElementById('heads').value = e.heads;
+    document.getElementById('heads-disp').textContent = (e.heads || 0) + ' 頭';
+    document.getElementById('fee-disp').textContent = '加工料金 ' + ((e.heads || 0) * 3500).toLocaleString() + '円';
   }
   // 旧データ（内訳なし）はセット欄に合計を入れる
   document.getElementById('output-set').value   = (e.oSet != null) ? (e.oSet || '') : (e.output || '');
@@ -1191,9 +1197,9 @@ function loadHistory(i) {
   // 結果は閉じて、入力欄にスクロール（訂正しやすいように）
   document.getElementById('results-area').style.display = 'none';
   document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  // 訂正しやすいよう、最初の入力欄にフォーカス
+  // 訂正しやすいよう、先頭の入力欄（加重平均単価）にフォーカス
   setTimeout(function() {
-    document.getElementById('heads').focus();
+    document.getElementById('weighted-price').focus();
   }, 300);
 }
 
