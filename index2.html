@@ -582,6 +582,9 @@
   .bp-row input{flex:0 0 56px;width:56px;border:1px solid var(--border);background:#fff;border-radius:6px;padding:6px;font-size:16px;text-align:center;font-weight:700;color:var(--text);outline:none;}
   .bp-row .su{color:var(--muted);font-size:12px;white-space:nowrap;}
   #msg-text{width:100%;margin-top:12px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;line-height:1.7;font-family:inherit;white-space:pre;color:var(--text);}
+  /* 種類別の歩留（薄緑） */
+  .yield-light td:last-child{ color:#5fae84 !important; font-weight:800 !important; font-size:15px !important; }
+  .yield-light td:first-child{ color:#5fae84 !important; }
 </style>
 </head>
 <body>
@@ -679,6 +682,32 @@
       </div>
     </div>
 
+    <!-- 副産物・パーツ（発注用・数量を入れた行だけ発注に入る） -->
+    <div class="field">
+      <label>副産物・パーツ（骨など発注用／数量を入れた行だけ発注に入る）</label>
+      <div class="byprod">
+        <div class="bp-row"><span class="nm">ガラ 10kg×</span><input type="number" id="bp-gara" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">背骨 10kg×</span><input type="number" id="bp-sebone" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ゲンコツ 10kg×</span><input type="number" id="bp-genkotsu10" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ゲンコツ 5kg×</span><input type="number" id="bp-genkotsu5" inputmode="decimal" min="0"><span class="su">袋(モモスネなし¥180-)</span></div>
+        <div class="bp-row"><span class="nm">脂 10kg×</span><input type="number" id="bp-abura" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ハラ脂 10kg×</span><input type="number" id="bp-haraabura" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ロース</span><input type="number" id="bp-loin" inputmode="decimal" min="0"><span class="su">本</span></div>
+        <div class="bp-row"><span class="nm">カタロース</span><input type="number" id="bp-kataloin" inputmode="decimal" min="0"><span class="su">本</span></div>
+        <div class="bp-row"><span class="nm">バラ</span><input type="number" id="bp-bara" inputmode="decimal" min="0"><span class="su">枚</span></div>
+        <div class="bp-row"><span class="nm">スジナシヒレ</span><input type="number" id="bp-hire" inputmode="decimal" min="0"><span class="su">kg位</span></div>
+      </div>
+      <input type="text" id="bp-other" placeholder="その他（自由記入・そのまま発注に入る）" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+    </div>
+
+    <!-- 発注（預け連絡）コピペ -->
+    <div class="field">
+      <label>発注（預け連絡）コピペ</label>
+      <button class="calc-btn" id="msg-build" style="background:var(--accent2); margin-top:0;"><span>✉️</span> 発注を作成</button>
+      <textarea id="msg-text" rows="11" style="margin-top:10px;"></textarea>
+      <button class="copy-btn" id="msg-copy" style="width:100%; margin:10px 0 0;"><span>📋</span> 発注をコピー</button>
+    </div>
+
     <!-- ④ 種類別　出来上がり重量（後日入力） -->
     <div class="field">
       <label>種類別　出来上がり重量（後日入力）</label>
@@ -705,24 +734,6 @@
         <input type="number" id="margin-input" inputmode="decimal" placeholder="10" min="0" max="99" step="1">
         <span class="unit">%</span>
       </div>
-    </div>
-
-    <!-- 副産物・パーツ（連絡文用・数量を入れた行だけ連絡文に入る） -->
-    <div class="field">
-      <label>副産物・パーツ（連絡文用／数量を入れた行だけ入る）</label>
-      <div class="byprod">
-        <div class="bp-row"><span class="nm">ガラ 10kg×</span><input type="number" id="bp-gara" inputmode="decimal" min="0"><span class="su">袋</span></div>
-        <div class="bp-row"><span class="nm">背骨 10kg×</span><input type="number" id="bp-sebone" inputmode="decimal" min="0"><span class="su">袋</span></div>
-        <div class="bp-row"><span class="nm">ゲンコツ 10kg×</span><input type="number" id="bp-genkotsu10" inputmode="decimal" min="0"><span class="su">袋</span></div>
-        <div class="bp-row"><span class="nm">ゲンコツ 5kg×</span><input type="number" id="bp-genkotsu5" inputmode="decimal" min="0"><span class="su">袋(モモスネなし¥180-)</span></div>
-        <div class="bp-row"><span class="nm">脂 10kg×</span><input type="number" id="bp-abura" inputmode="decimal" min="0"><span class="su">袋</span></div>
-        <div class="bp-row"><span class="nm">ハラ脂 10kg×</span><input type="number" id="bp-haraabura" inputmode="decimal" min="0"><span class="su">袋</span></div>
-        <div class="bp-row"><span class="nm">ロース</span><input type="number" id="bp-loin" inputmode="decimal" min="0"><span class="su">本</span></div>
-        <div class="bp-row"><span class="nm">カタロース</span><input type="number" id="bp-kataloin" inputmode="decimal" min="0"><span class="su">本</span></div>
-        <div class="bp-row"><span class="nm">バラ</span><input type="number" id="bp-bara" inputmode="decimal" min="0"><span class="su">枚</span></div>
-        <div class="bp-row"><span class="nm">スジナシヒレ</span><input type="number" id="bp-hire" inputmode="decimal" min="0"><span class="su">kg位</span></div>
-      </div>
-      <input type="text" id="bp-other" placeholder="その他（自由記入・そのまま連絡文に入る）" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
     </div>
 
     <button class="calc-btn" id="calc-btn">
@@ -775,18 +786,23 @@
           <td>目標販売単価</td>
           <td id="r-target" class="price-target-cell">—</td>
         </tr>
+        <tr id="r-yset-row" class="yield-light" style="display:none">
+          <td>セット歩留</td>
+          <td id="r-yset">—</td>
+        </tr>
+        <tr id="r-yham-row" class="yield-light" style="display:none">
+          <td>ハム歩留</td>
+          <td id="r-yham">—</td>
+        </tr>
+        <tr id="r-yparts-row" class="yield-light" style="display:none">
+          <td>パーツ歩留</td>
+          <td id="r-yparts">—</td>
+        </tr>
       </table>
       <div class="message-box" id="msg-box"></div>
       <button class="copy-btn" id="copy-btn">
         <span>📋</span> テキストをコピー
       </button>
-
-      <!-- 発注（預け連絡）コピペ -->
-      <div style="border-top:1px solid var(--border); margin:4px 16px 0; padding-top:12px;">
-        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">✉️ 発注（預け連絡）— 手直しもOK</div>
-        <textarea id="msg-text" rows="12"></textarea>
-        <button class="copy-btn" id="msg-copy" style="width:100%;margin:10px 0 16px;"><span>📋</span> 発注をコピー</button>
-      </div>
     </div>
   </div>
 
@@ -901,6 +917,7 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
   window.__setLots = function(L){ lots = (L && L.set && L.ham && L.parts) ? L : { set: [], ham: [], parts: [] }; applyAll(); };
   window.__getLots = function(){ return lots; };
   window.__lotHeads = function(t){ return lots[t] ? lots[t].length : 0; };
+  window.__lotSum = function(t){ return lots[t] ? sumOf(lots[t]) : 0; };
 
   document.querySelectorAll('.branch-open').forEach(function(row){
     row.addEventListener('click', function(){
@@ -1000,6 +1017,7 @@ function buildMessage(){
   s += '\nお願いします。';
   document.getElementById('msg-text').value = s;
 }
+document.getElementById('msg-build').addEventListener('click', buildMessage);
 document.getElementById('msg-copy').addEventListener('click', function(){
   const t = document.getElementById('msg-text');
   if (!t.value.trim()) buildMessage();
@@ -1185,12 +1203,24 @@ function calculate() {
   msg += '\nご確認よろしくお願いいたします。';
   document.getElementById('msg-box').textContent = msg;
 
+  // 種類別の歩留（薄緑）＝各出来上がり ÷ 各枝重
+  (function(){
+    const map = [['set','output-set','r-yset-row','r-yset'],['ham','output-ham','r-yham-row','r-yham'],['parts','output-parts','r-yparts-row','r-yparts']];
+    map.forEach(function(m){
+      const ow = parseFloat(document.getElementById(m[1]).value);
+      const bw = window.__lotSum(m[0]);
+      if (!isNaN(ow) && ow > 0 && bw > 0){
+        document.getElementById(m[3]).textContent = (ow / bw * 100).toFixed(1) + '%';
+        document.getElementById(m[2]).style.display = '';
+      } else {
+        document.getElementById(m[2]).style.display = 'none';
+      }
+    });
+  })();
+
   document.getElementById('results-area').style.display = 'block';
   document.getElementById('copy-btn').classList.remove('copied');
   document.getElementById('copy-btn').innerHTML = '<span>📋</span> テキストをコピー';
-  buildMessage();   // 発注（預け連絡）コピペも自動生成
-  document.getElementById('msg-copy').classList.remove('copied');
-  document.getElementById('msg-copy').innerHTML = '<span>📋</span> 発注をコピー';
 
   // スクロール
   setTimeout(() => {
