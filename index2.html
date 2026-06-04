@@ -1061,7 +1061,6 @@ function readEditInputs(){
   });
 }
 function renderSettings(){
-  document.getElementById('set-fee').value = APPCFG.fee;
   document.getElementById('set-edit-btn').textContent = setEditing ? '✓ 編集を終える' : '✏️ 品目を編集';
   document.getElementById('set-add').style.display = setEditing ? 'block' : 'none';
   const cont = document.getElementById('set-items');
@@ -1091,7 +1090,7 @@ function renderSettings(){
     }).join('');
   }
 }
-function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
+function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
 function closeSettings(){ document.getElementById('set-modal').classList.remove('show'); }
 document.getElementById('settings-btn').addEventListener('click', openSettings);
 document.getElementById('set-x').addEventListener('click', closeSettings);
