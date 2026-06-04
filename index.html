@@ -623,8 +623,19 @@
 
     <div class="field">
       <label>出来上がり重量</label>
+      <div class="input-row" style="margin-bottom:8px;">
+        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">セット</span>
+        <input type="number" id="output-set" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit">kg</span>
+      </div>
+      <div class="input-row" style="margin-bottom:8px;">
+        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">ハム</span>
+        <input type="number" id="output-ham" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit">kg</span>
+      </div>
       <div class="input-row">
-        <input type="number" id="output" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">パーツ</span>
+        <input type="number" id="output-parts" inputmode="decimal" placeholder="" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
     </div>
@@ -836,12 +847,22 @@ function getLabel(type, heads) {
 function calculate() {
   const heads  = parseFloat(document.getElementById('heads').value);
   const branch = parseFloat(document.getElementById('branch').value);
-  const output = parseFloat(document.getElementById('output').value);
+  const oSet   = parseFloat(document.getElementById('output-set').value)   || 0;
+  const oHam   = parseFloat(document.getElementById('output-ham').value)   || 0;
+  const oParts = parseFloat(document.getElementById('output-parts').value) || 0;
+  const output = oSet + oHam + oParts;
   const wPrice = parseFloat(document.getElementById('weighted-price').value);
 
-  if (isNaN(heads) || isNaN(branch) || isNaN(output) || branch <= 0) {
+  if (isNaN(heads) || isNaN(branch) || output <= 0 || branch <= 0) {
     return;
   }
+
+  // 出来上がりの内訳（入力があるものだけ）
+  const outParts = [];
+  if (oSet   > 0) outParts.push(`セット${oSet.toFixed(1)}k`);
+  if (oHam   > 0) outParts.push(`ハム${oHam.toFixed(1)}k`);
+  if (oParts > 0) outParts.push(`パーツ${oParts.toFixed(1)}k`);
+  const breakdown = outParts.join('　');
 
   const yield_ = (output / branch * 100);
   const yieldStr = yield_.toFixed(1);
@@ -858,7 +879,9 @@ function calculate() {
   document.getElementById('r-heads').textContent  = `${heads} 頭`;
   document.getElementById('r-processing-fee').textContent = `${(heads * 3500).toLocaleString()} 円（3,500円/頭）`;
   document.getElementById('r-branch').textContent = `${branch.toFixed(1)} kg`;
-  document.getElementById('r-output').textContent = `${output.toFixed(1)} kg`;
+  document.getElementById('r-output').textContent = outParts.length > 1
+    ? `${output.toFixed(1)} kg（${breakdown}）`
+    : `${output.toFixed(1)} kg`;
 
   const yieldCell = document.getElementById('r-yield');
   yieldCell.innerHTML = `<span class="${cls}">${yieldStr}%</span><span class="yield-badge ${badgeCls}">${badge}</span>`;
@@ -884,7 +907,7 @@ function calculate() {
   }
 
   // メッセージ生成
-  let msg = `${label}\n枝重\u3000\u3000\u3000${branch.toFixed(1)}k\n出来上がり${output.toFixed(1)}k\n歩留\u3000\u3000\u3000${yieldStr}%`;
+  let msg = `${label}\n枝重\u3000\u3000\u3000${branch.toFixed(1)}k\n出来上がり${output.toFixed(1)}k${outParts.length>1?'（'+breakdown+'）':''}\n歩留\u3000\u3000\u3000${yieldStr}%`;
   if (!isNaN(wPrice) && wPrice > 0) {
     const unitCost = Math.round(branch * wPrice / output);
     const processingCost = Math.round((branch * wPrice + heads * 3500) / output);
@@ -907,7 +930,7 @@ function calculate() {
   const unitCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(branch * wPrice / output) : null;
   const processingCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round((branch * wPrice + heads * 3500) / output) : null;
   const targetPriceSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(processingCostSave / (1 - marginRate / 100)) : null;
-  const entry = { heads, branch, output, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
+  const entry = { heads, branch, output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
   history.unshift(entry);
   if (history.length > 20) history = history.slice(0, 20);
   localStorage.setItem('budomari_history', JSON.stringify(history));
@@ -1039,7 +1062,10 @@ function loadHistory(i) {
   const e = history[i];
   document.getElementById('heads').value  = e.heads;
   document.getElementById('branch').value = e.branch;
-  document.getElementById('output').value = e.output;
+  // 旧データ（内訳なし）はセット欄に合計を入れる
+  document.getElementById('output-set').value   = (e.oSet != null) ? (e.oSet || '') : (e.output || '');
+  document.getElementById('output-ham').value   = (e.oHam != null && e.oHam) ? e.oHam : '';
+  document.getElementById('output-parts').value = (e.oParts != null && e.oParts) ? e.oParts : '';
   document.getElementById('weighted-price').value = e.wPrice || '';
   // 種別を復元
   const t = e.type || 'set';
