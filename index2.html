@@ -732,14 +732,6 @@
     <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.6;">入力はすべて自動保存されます。閉じても続きから入力できます。</div>
   </div>
 
-  <!-- 預け連絡文（作成＆コピー） -->
-  <div class="input-card">
-    <h2>預け連絡文</h2>
-    <button class="calc-btn" id="msg-build" style="background:var(--accent2);"><span>✉️</span> 連絡文を作成</button>
-    <textarea id="msg-text" rows="13" placeholder="「連絡文を作成」を押すと、入力内容から自動で文章ができます。ここで手直しもOK。"></textarea>
-    <button class="copy-btn" id="msg-copy" style="width:100%;margin:12px 0 0;"><span>📋</span> 連絡文をコピー</button>
-  </div>
-
   <!-- 結果 -->
   <div id="results-area">
     <div class="result-card">
@@ -788,6 +780,13 @@
       <button class="copy-btn" id="copy-btn">
         <span>📋</span> テキストをコピー
       </button>
+
+      <!-- 発注（預け連絡）コピペ -->
+      <div style="border-top:1px solid var(--border); margin:4px 16px 0; padding-top:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;">✉️ 発注（預け連絡）— 手直しもOK</div>
+        <textarea id="msg-text" rows="12"></textarea>
+        <button class="copy-btn" id="msg-copy" style="width:100%;margin:10px 0 16px;"><span>📋</span> 発注をコピー</button>
+      </div>
     </div>
   </div>
 
@@ -974,8 +973,11 @@ function buildMessage(){
   const totN = document.getElementById('heads').value || '0';
   const totW = document.getElementById('branch').value || '';
   const tanka = document.getElementById('weighted-price').value || '';
+  const names = ['日','月','火','水','木','金','土'];
+  const td = new Date();
+  const todayStr = (td.getMonth() + 1) + '/' + td.getDate() + '(' + names[td.getDay()] + ')';
   let s = nextReceiptYoubi() + '曜日受け取り\n';
-  s += '今日預け' + totN + '頭(' + totW + 'kg、¥' + tanka + '-)\n\n';
+  s += todayStr + '預け' + totN + '頭(' + totW + 'kg、¥' + tanka + '-)\n\n';
   const setN = window.__lotHeads('set'), hamN = window.__lotHeads('ham'), partsN = window.__lotHeads('parts');
   if (setN > 0)   s += '●パック　0.5頭セット' + setN + '頭\n';
   if (hamN > 0)   s += '●パック　18.5cmハムロース　パーツ計量' + hamN + '頭\n';
@@ -998,7 +1000,6 @@ function buildMessage(){
   s += '\nお願いします。';
   document.getElementById('msg-text').value = s;
 }
-document.getElementById('msg-build').addEventListener('click', buildMessage);
 document.getElementById('msg-copy').addEventListener('click', function(){
   const t = document.getElementById('msg-text');
   if (!t.value.trim()) buildMessage();
@@ -1187,6 +1188,9 @@ function calculate() {
   document.getElementById('results-area').style.display = 'block';
   document.getElementById('copy-btn').classList.remove('copied');
   document.getElementById('copy-btn').innerHTML = '<span>📋</span> テキストをコピー';
+  buildMessage();   // 発注（預け連絡）コピペも自動生成
+  document.getElementById('msg-copy').classList.remove('copied');
+  document.getElementById('msg-copy').innerHTML = '<span>📋</span> 発注をコピー';
 
   // スクロール
   setTimeout(() => {
