@@ -575,6 +575,13 @@
   .kp-foot{display:flex;gap:7px;margin-top:9px;}
   .kp-clr{flex:0 0 88px;background:#fff;border:1.5px solid var(--border);color:var(--red);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;}
   .kp-done{flex:1;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;}
+  /* 副産物・パーツ */
+  .byprod{display:flex;flex-direction:column;gap:6px;}
+  .bp-row{display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text);font-weight:700;}
+  .bp-row .nm{flex:1;}
+  .bp-row input{flex:0 0 56px;width:56px;border:1px solid var(--border);background:#fff;border-radius:6px;padding:6px;font-size:16px;text-align:center;font-weight:700;color:var(--text);outline:none;}
+  .bp-row .su{color:var(--muted);font-size:12px;white-space:nowrap;}
+  #msg-text{width:100%;margin-top:12px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;line-height:1.7;font-family:inherit;white-space:pre;color:var(--text);}
 </style>
 </head>
 <body>
@@ -700,11 +707,37 @@
       </div>
     </div>
 
+    <!-- 副産物・パーツ（連絡文用・数量を入れた行だけ連絡文に入る） -->
+    <div class="field">
+      <label>副産物・パーツ（連絡文用／数量を入れた行だけ入る）</label>
+      <div class="byprod">
+        <div class="bp-row"><span class="nm">ガラ 10kg×</span><input type="number" id="bp-gara" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">背骨 10kg×</span><input type="number" id="bp-sebone" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ゲンコツ 10kg×</span><input type="number" id="bp-genkotsu10" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ゲンコツ 5kg×</span><input type="number" id="bp-genkotsu5" inputmode="decimal" min="0"><span class="su">袋(モモスネなし¥180-)</span></div>
+        <div class="bp-row"><span class="nm">脂 10kg×</span><input type="number" id="bp-abura" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ハラ脂 10kg×</span><input type="number" id="bp-haraabura" inputmode="decimal" min="0"><span class="su">袋</span></div>
+        <div class="bp-row"><span class="nm">ロース</span><input type="number" id="bp-loin" inputmode="decimal" min="0"><span class="su">本</span></div>
+        <div class="bp-row"><span class="nm">カタロース</span><input type="number" id="bp-kataloin" inputmode="decimal" min="0"><span class="su">本</span></div>
+        <div class="bp-row"><span class="nm">バラ</span><input type="number" id="bp-bara" inputmode="decimal" min="0"><span class="su">枚</span></div>
+        <div class="bp-row"><span class="nm">スジナシヒレ</span><input type="number" id="bp-hire" inputmode="decimal" min="0"><span class="su">kg位</span></div>
+      </div>
+      <input type="text" id="bp-other" placeholder="その他（自由記入・そのまま連絡文に入る）" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+    </div>
+
     <button class="calc-btn" id="calc-btn">
       <span>📊</span> 計算する
     </button>
     <button class="clear-btn" id="newlot-btn" style="margin-top:8px;">🆕 新しいロット（入力をクリア）</button>
     <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.6;">入力はすべて自動保存されます。閉じても続きから入力できます。</div>
+  </div>
+
+  <!-- 預け連絡文（作成＆コピー） -->
+  <div class="input-card">
+    <h2>預け連絡文</h2>
+    <button class="calc-btn" id="msg-build" style="background:var(--accent2);"><span>✉️</span> 連絡文を作成</button>
+    <textarea id="msg-text" rows="13" placeholder="「連絡文を作成」を押すと、入力内容から自動で文章ができます。ここで手直しもOK。"></textarea>
+    <button class="copy-btn" id="msg-copy" style="width:100%;margin:12px 0 0;"><span>📋</span> 連絡文をコピー</button>
   </div>
 
   <!-- 結果 -->
@@ -896,7 +929,8 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
 })();
 
 // ── 入力途中の自動保存（下書き）：加重平均・出来上がりも打った瞬間に保存 ──
-const DRAFT_FIELDS = ['weighted-price','output-set','output-ham','output-parts'];
+const DRAFT_FIELDS = ['weighted-price','output-set','output-ham','output-parts',
+  'bp-gara','bp-sebone','bp-genkotsu10','bp-genkotsu5','bp-abura','bp-haraabura','bp-loin','bp-kataloin','bp-bara','bp-hire','bp-other'];
 function saveDraft(){
   const d = {};
   DRAFT_FIELDS.forEach(function(id){ d[id] = document.getElementById(id).value; });
@@ -924,7 +958,56 @@ document.getElementById('newlot-btn').addEventListener('click', function(){
   DRAFT_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
   localStorage.removeItem('budomari_lots');
   window.__setLots(null);
+  document.getElementById('msg-text').value = '';
   document.getElementById('results-area').style.display = 'none';
+});
+
+// ── 預け連絡文の自動生成＋コピー ──
+function nextReceiptYoubi(){
+  // 入力日の「次の火曜or木曜」（火木受取）
+  const names = ['日','月','火','水','木','金','土'];
+  const wd = new Date().getDay();
+  for (let i = 1; i <= 7; i++){ const w = (wd + i) % 7; if (w === 2 || w === 4) return names[w]; }
+  return '';
+}
+function buildMessage(){
+  const totN = document.getElementById('heads').value || '0';
+  const totW = document.getElementById('branch').value || '';
+  const tanka = document.getElementById('weighted-price').value || '';
+  let s = nextReceiptYoubi() + '曜日受け取り\n';
+  s += '今日預け' + totN + '頭(' + totW + 'kg、¥' + tanka + '-)\n\n';
+  const setN = window.__lotHeads('set'), hamN = window.__lotHeads('ham'), partsN = window.__lotHeads('parts');
+  if (setN > 0)   s += '●パック　0.5頭セット' + setN + '頭\n';
+  if (hamN > 0)   s += '●パック　18.5cmハムロース　パーツ計量' + hamN + '頭\n';
+  if (partsN > 0) s += '●パック　普通ロース　パーツ計量' + partsN + '頭\n';
+  const bp = [];
+  function add(id, fmt){ const v = document.getElementById(id).value; if (v && parseFloat(v) > 0) bp.push(fmt(v)); }
+  add('bp-gara',       function(v){ return 'ガラ10kg×' + v + '袋'; });
+  add('bp-sebone',     function(v){ return '背骨10kg×' + v + '袋'; });
+  add('bp-genkotsu10', function(v){ return 'ゲンコツ10kg×' + v + '袋'; });
+  add('bp-genkotsu5',  function(v){ return 'ゲンコツ5kg×' + v + '袋(モモスネなし¥180-)'; });
+  add('bp-abura',      function(v){ return '脂10kg×' + v + '袋'; });
+  add('bp-haraabura',  function(v){ return 'ハラ脂10kg×' + v + '袋'; });
+  add('bp-loin',       function(v){ return 'ロース' + v + '本'; });
+  add('bp-kataloin',   function(v){ return 'カタロース' + v + '本'; });
+  add('bp-bara',       function(v){ return 'バラ' + v + '枚'; });
+  add('bp-hire',       function(v){ return 'スジナシヒレ' + v + 'kg位'; });
+  const other = document.getElementById('bp-other').value.trim();
+  if (other) bp.push(other);
+  if (bp.length) s += '\n' + bp.join('\n') + '\n';
+  s += '\nお願いします。';
+  document.getElementById('msg-text').value = s;
+}
+document.getElementById('msg-build').addEventListener('click', buildMessage);
+document.getElementById('msg-copy').addEventListener('click', function(){
+  const t = document.getElementById('msg-text');
+  if (!t.value.trim()) buildMessage();
+  t.focus(); t.select(); t.setSelectionRange(0, 99999);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value);
+  else document.execCommand('copy');
+  const b = this, o = b.innerHTML;
+  b.classList.add('copied'); b.innerHTML = '<span>✅</span> コピーしました！';
+  setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
 });
 
 // ── ログイン処理 ──
