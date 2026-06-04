@@ -639,13 +639,21 @@
       </div>
     </div>
 
-    <!-- ③ 頭数（枝重の数で自動）＋加工料金（自動） -->
+    <!-- ③ 頭数（枝重の数で自動） -->
     <div class="field">
       <label>頭数（枝重の数で自動）</label>
       <input type="hidden" id="heads">
       <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
         <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:var(--accent);" id="heads-disp">0 頭</span>
-        <span class="unit" id="fee-disp" style="color:#aab4c8; white-space:nowrap;">加工料金 0円</span>
+      </div>
+    </div>
+
+    <!-- 加工賃（固定・記入不可） -->
+    <div class="field">
+      <label>加工賃</label>
+      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
+        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:#aab4c8;">1頭 3,500円（固定）</span>
+        <span class="unit" id="fee-disp" style="color:var(--accent); white-space:nowrap;">合計 0円</span>
       </div>
     </div>
 
@@ -829,7 +837,7 @@ let branchItems = JSON.parse(localStorage.getItem('budomari_branchItems') || '[]
     // 頭数は枝重の数で自動・加工料金(3,500円/頭)も自動表示
     document.getElementById('heads').value = n;
     document.getElementById('heads-disp').textContent = n + ' 頭';
-    document.getElementById('fee-disp').textContent = '加工料金 ' + (n * 3500).toLocaleString() + '円';
+    document.getElementById('fee-disp').textContent = '合計 ' + (n * 3500).toLocaleString() + '円';
     localStorage.setItem('budomari_branchItems', JSON.stringify(branchItems));
   }
   // 履歴復元・外部から呼ぶ用
@@ -1181,7 +1189,7 @@ function loadHistory(i) {
     // 旧データは頭数を手入力値から復元
     document.getElementById('heads').value = e.heads;
     document.getElementById('heads-disp').textContent = (e.heads || 0) + ' 頭';
-    document.getElementById('fee-disp').textContent = '加工料金 ' + ((e.heads || 0) * 3500).toLocaleString() + '円';
+    document.getElementById('fee-disp').textContent = '合計 ' + ((e.heads || 0) * 3500).toLocaleString() + '円';
   }
   // 旧データ（内訳なし）はセット欄に合計を入れる
   document.getElementById('output-set').value   = (e.oSet != null) ? (e.oSet || '') : (e.output || '');
