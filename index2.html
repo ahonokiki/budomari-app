@@ -1089,7 +1089,7 @@ function renderSettings(){
     }).join('');
   }
 }
-function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-webhook').value = localStorage.getItem('budomari_webhook') || ''; document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
+function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-webhook').value = loadWebhook(); document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
 function closeSettings(){ document.getElementById('set-modal').classList.remove('show'); }
 document.getElementById('settings-btn').addEventListener('click', openSettings);
 document.getElementById('set-x').addEventListener('click', closeSettings);
@@ -1198,7 +1198,7 @@ const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 // ── スプレッドシート記録（GAS Webhook・追記専用） ──
 // GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
 const WEBHOOK_URL = ''; // ★テスト版(index2.html)はスプレッドシート記録を無効化（本番index.htmlへ反映時に実URLを入れる）
-function loadWebhook() { return WEBHOOK_URL || localStorage.getItem('budomari_webhook') || ''; }
+function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL || ''; }
 function postToSheet(entry) {
   const url = loadWebhook();
   if (!url) return; // 未設定なら端末内の履歴のみ

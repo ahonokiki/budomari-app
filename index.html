@@ -545,6 +545,46 @@
   }
 
   .shake { animation: shake 0.4s ease; }
+
+  /* ── 枝重キーパッド モーダル ── */
+  .kp-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;flex-direction:column;justify-content:flex-end;}
+  .kp-modal.show{display:flex;}
+  .kp-sheet{background:var(--bg);border-radius:18px 18px 0 0;padding:12px 12px 16px;max-width:480px;margin:0 auto;width:100%;}
+  .kp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .kp-head h3{font-size:14px;font-weight:700;color:var(--accent);}
+  .kp-head .x{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;}
+  .kp-total{background:var(--card);border-radius:12px;padding:9px;text-align:center;box-shadow:var(--shadow);}
+  .kp-total .v{font-size:30px;font-weight:900;color:var(--accent);line-height:1.05;}
+  .kp-total .v small{font-size:14px;color:var(--muted);font-weight:700;}
+  .kp-total .cnt{font-size:11px;color:var(--muted);}
+  .kp-chips{height:96px;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;background:#fbfcfe;border:1px dashed var(--border);border-radius:10px;padding:7px;margin:8px 0;}
+  .kp-chip{background:#e8eef8;color:var(--accent);border-radius:8px;padding:5px 9px;font-size:15px;font-weight:700;height:30px;}
+  .kp-chips:empty::before{content:'枝重がここに並びます（タップで1頭削除）';color:#bcc6d8;font-size:12px;}
+  .kp-buf{background:var(--card);border:2px solid var(--accent2);border-radius:10px;padding:8px 14px;font-size:26px;font-weight:800;text-align:right;min-height:48px;margin-bottom:8px;}
+  .kp-buf .ph{color:#c0cadb;font-size:15px;font-weight:500;}
+  .kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .kp-key{background:var(--card);border:none;border-radius:11px;padding:13px 0;font-size:23px;font-weight:700;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;}
+  .kp-key:active{background:#eef1f7;transform:scale(.97);}
+  .kp-key.del{color:var(--red);}
+  .kp-key.sm{font-size:13px;}
+  .kp-commit{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;}
+  .kp-cbtn{border:none;border-radius:12px;padding:12px 0;font-size:18px;font-weight:800;color:#fff;cursor:pointer;}
+  .kp-cbtn small{display:block;font-size:10px;font-weight:600;opacity:.9;}
+  .kp-cbtn.h5{background:var(--accent2);}
+  .kp-cbtn.h0{background:var(--green);}
+  .kp-foot{display:flex;gap:7px;margin-top:9px;}
+  .kp-clr{flex:0 0 88px;background:#fff;border:1.5px solid var(--border);color:var(--red);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;}
+  .kp-done{flex:1;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;}
+  /* 副産物・パーツ */
+  .byprod{display:flex;flex-direction:column;gap:6px;}
+  .bp-row{display:flex;align-items:center;gap:6px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text);font-weight:700;}
+  .bp-row .nm{flex:1;}
+  .bp-row input{flex:0 0 56px;width:56px;border:1px solid var(--border);background:#fff;border-radius:6px;padding:6px;font-size:16px;text-align:center;font-weight:700;color:var(--text);outline:none;}
+  .bp-row .su{color:var(--muted);font-size:12px;white-space:nowrap;}
+  #msg-text{width:100%;margin-top:12px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;line-height:1.7;font-family:inherit;white-space:pre;color:var(--text);}
+  /* 種類別の歩留（薄緑） */
+  .yield-light td:last-child{ color:#5fae84 !important; font-weight:800 !important; font-size:15px !important; }
+  .yield-light td:first-child{ color:#5fae84 !important; }
 </style>
 </head>
 <body>
@@ -572,47 +612,20 @@
   </div>
 </div>
 
-<header>
+<header style="position:relative;">
   <h1>枝肉歩留まり計算</h1>
   <span class="subtitle">計算ソフトのオーダーメイド、<br>お気軽にご相談ください。<br>株式会社若林商店</span>
+  <button id="settings-btn" title="設定" style="position:absolute; top:14px; right:14px; background:rgba(255,255,255,0.18); border:none; color:#fff; font-size:20px; width:40px; height:40px; border-radius:10px; cursor:pointer; line-height:1;">⚙</button>
 </header>
 
 <div class="container">
 
-  <!-- 種別選択 -->
-  <div class="type-selector">
-    <button class="type-btn active" data-type="set">セット</button>
-    <button class="type-btn" data-type="ham">ハム計量</button>
-    <button class="type-btn" data-type="parts">パーツ計量</button>
-  </div>
 
   <!-- 入力フォーム -->
   <div class="input-card">
     <h2>入力</h2>
 
-    <div class="field">
-      <label>加工料金</label>
-      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
-        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:#aab4c8;">3,500 円/頭（固定）</span>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>頭数</label>
-      <div class="input-row">
-        <input type="number" id="heads" inputmode="decimal" placeholder="" min="0" step="0.5">
-        <span class="unit">頭</span>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>枝重</label>
-      <div class="input-row">
-        <input type="number" id="branch" inputmode="decimal" placeholder="" min="0" step="0.1">
-        <span class="unit">kg</span>
-      </div>
-    </div>
-
+    <!-- ① 加重平均単価 -->
     <div class="field">
       <label>枝肉加重平均単価</label>
       <div class="input-row">
@@ -621,21 +634,80 @@
       </div>
     </div>
 
+    <!-- ② 枝重（種類別・タップでキーパッド・1頭ずつ） -->
+    <input type="hidden" id="heads">
+    <input type="hidden" id="branch">
     <div class="field">
-      <label>出来上がり重量</label>
+      <label>枝重（種類別・タップで1頭ずつ入力）</label>
+      <div class="input-row branch-open" data-type="set" style="cursor:pointer; margin-bottom:8px;">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">セット</span>
+        <input type="number" id="branch-set" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
+        <span class="unit" id="cnt-set" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+      <div class="input-row branch-open" data-type="ham" style="cursor:pointer; margin-bottom:8px;">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">ハム</span>
+        <input type="number" id="branch-ham" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
+        <span class="unit" id="cnt-ham" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+      <div class="input-row branch-open" data-type="parts" style="cursor:pointer;">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">パーツ</span>
+        <input type="number" id="branch-parts" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
+        <span class="unit" id="cnt-parts" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+    </div>
+
+    <!-- ③ 合計（頭数・枝重・自動） -->
+    <div class="field">
+      <label>合計（自動）</label>
+      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
+        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:var(--accent);" id="heads-disp">0 頭</span>
+        <span class="unit" id="branch-total-disp" style="color:var(--accent); white-space:nowrap;">枝重 0.0kg</span>
+      </div>
+    </div>
+
+    <!-- 加工賃（固定・記入不可）：合計頭数を金額の左に表示 -->
+    <div class="field">
+      <label>加工賃</label>
+      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
+        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:#aab4c8;" id="fee-rate-disp">1頭 3,500円</span>
+        <span class="unit" id="fee-disp" style="color:var(--accent); white-space:nowrap;">0頭　合計 0円</span>
+      </div>
+    </div>
+
+    <!-- 副産物・パーツ（発注用・数量を入れた行だけ発注に入る） -->
+    <div class="field">
+      <label>副産物・パーツ（骨など発注用／数量を入れた行だけ発注に入る）</label>
+      <div class="byprod" id="bp-list"></div>
+      <input type="text" id="bp-other" placeholder="その他（自由記入・そのまま発注に入る）" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+    </div>
+
+    <!-- 発注（預け連絡）コピペ -->
+    <div class="field">
+      <label>発注（預け連絡）コピペ</label>
+      <button class="calc-btn" id="msg-build" style="background:var(--accent2); margin-top:0;"><span>✉️</span> 発注を作成</button>
+      <textarea id="msg-text" rows="11" style="margin-top:10px;"></textarea>
+      <button class="copy-btn" id="msg-copy" style="width:100%; margin:10px 0 0;"><span>📋</span> 発注をコピー</button>
+    </div>
+
+    <!-- ④ 種類別　出来上がり重量（後日入力） -->
+    <div class="field">
+      <label>種類別　出来上がり重量（後日入力）</label>
       <div class="input-row" style="margin-bottom:8px;">
-        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">セット</span>
-        <input type="number" id="output-set" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 4px 0 12px; min-width:46px; text-align:left;">セット</span>
+        <input type="number" id="output-set" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
       <div class="input-row" style="margin-bottom:8px;">
-        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">ハム</span>
-        <input type="number" id="output-ham" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 4px 0 12px; min-width:46px; text-align:left;">ハム</span>
+        <input type="number" id="output-ham" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
       <div class="input-row">
-        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">パーツ</span>
-        <input type="number" id="output-parts" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 4px 0 12px; min-width:46px; text-align:left;">パーツ</span>
+        <input type="number" id="output-parts" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
     </div>
@@ -651,6 +723,8 @@
     <button class="calc-btn" id="calc-btn">
       <span>📊</span> 計算する
     </button>
+    <button class="clear-btn" id="newlot-btn" style="margin-top:8px;">🆕 新しいロット（入力をクリア）</button>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.6;">入力はすべて自動保存されます。閉じても続きから入力できます。設定は右上⚙から。</div>
   </div>
 
   <!-- 結果 -->
@@ -696,6 +770,18 @@
           <td>目標販売単価</td>
           <td id="r-target" class="price-target-cell">—</td>
         </tr>
+        <tr id="r-yset-row" class="yield-light" style="display:none">
+          <td>セット歩留</td>
+          <td id="r-yset">—</td>
+        </tr>
+        <tr id="r-yham-row" class="yield-light" style="display:none">
+          <td>ハム歩留</td>
+          <td id="r-yham">—</td>
+        </tr>
+        <tr id="r-yparts-row" class="yield-light" style="display:none">
+          <td>パーツ歩留</td>
+          <td id="r-yparts">—</td>
+        </tr>
       </table>
       <div class="message-box" id="msg-box"></div>
       <button class="copy-btn" id="copy-btn">
@@ -711,6 +797,7 @@
       <div class="empty-history">履歴はまだありません</div>
     </div>
     <button class="clear-btn" id="clear-btn" style="display:none">🗑 履歴をクリア</button>
+    <button class="clear-btn" id="restore-btn" style="display:none;background:#eef4ff;color:var(--accent2);border:1px solid #cfe0ff;">📜 直近100件を再表示</button>
   </div>
 
   <!-- フッター -->
@@ -721,17 +808,117 @@
     © 2025 株式会社若林商店 All Rights Reserved.
   </div>
 
-  <div style="text-align:center;padding:0 16px 24px;">
-    <a href="#" id="settings-link" style="font-size:11px;color:#aab4c8;text-decoration:underline;">⚙ 記録先スプレッドシート設定</a>
-  </div>
-
 </div>
+<!-- 枝重キーパッド モーダル -->
+<!-- 設定モーダル（加工賃・固定発注／2段階確認） -->
+<div class="kp-modal" id="set-modal">
+  <div class="kp-sheet" style="max-height:90vh; overflow-y:auto;">
+    <div class="kp-head"><h3>⚙ 設定</h3><button class="x" id="set-x">✕</button></div>
+
+    <div class="field">
+      <label>加工賃（円/頭）</label>
+      <div class="input-row">
+        <input type="number" id="set-fee" inputmode="decimal" min="0" step="100">
+        <span class="unit">円/頭</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label style="display:flex; align-items:center; justify-content:space-between;">
+        <span>副産物・パーツの品目（🔵火・🟢木の固定数量）</span>
+        <button id="set-edit-btn" style="background:var(--accent2); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700;">✏️ 品目を編集</button>
+      </label>
+      <div id="set-items"></div>
+      <button id="set-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 品目を追加</button>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「品目を編集」で<b>名称・単位の変更</b>、<b>↑↓で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。火・木の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
+    </div>
+
+    <div class="field">
+      <label>記録先スプレッドシート（Webhook URL）</label>
+      <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/.../exec" style="width:100%;">
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">GASをデプロイして出た<b>ウェブアプリURL</b>を貼ると、計算するたび<b>自動で台帳（スプレッドシート）に記録</b>されます。<b>空欄＝この端末内のみ</b>。</div>
+    </div>
+
+    <!-- 2段階確認 -->
+    <button class="kp-done" id="set-save" style="width:100%; margin-top:6px;">設定を保存</button>
+    <div id="set-confirm" style="display:none; margin-top:10px; background:#fff3e0; border:1px solid #ffd9a0; border-radius:12px; padding:12px; text-align:center;">
+      <div style="font-size:13px; font-weight:700; color:#a65a00; margin-bottom:10px;">この内容で設定を変更しますか？</div>
+      <div style="display:flex; gap:8px;">
+        <button id="set-cancel" style="flex:1; padding:12px; background:#fff; border:1.5px solid var(--border); border-radius:10px; font-size:14px; font-weight:700; color:var(--muted);">キャンセル</button>
+        <button id="set-confirm-yes" style="flex:1; padding:12px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700;">はい、変更する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="kp-modal" id="kp-modal">
+  <div class="kp-sheet">
+    <div class="kp-head">
+      <h3 id="kp-title">⚖️ 枝重を入力（.5は左／.0は右✓）</h3>
+      <button class="x" id="kp-x">✕</button>
+    </div>
+    <div class="kp-total"><div class="v" id="kp-total">0.0<small> kg</small></div><div class="cnt" id="kp-cnt">0 頭</div></div>
+    <div class="kp-chips" id="kp-chips"></div>
+    <div class="kp-buf" id="kp-buf"><span class="ph">数字を入力…</span></div>
+    <div class="kp-grid">
+      <button class="kp-key" data-d="7">7</button><button class="kp-key" data-d="8">8</button><button class="kp-key" data-d="9">9</button>
+      <button class="kp-key" data-d="4">4</button><button class="kp-key" data-d="5">5</button><button class="kp-key" data-d="6">6</button>
+      <button class="kp-key" data-d="1">1</button><button class="kp-key" data-d="2">2</button><button class="kp-key" data-d="3">3</button>
+      <button class="kp-key del" id="kp-del">⌫</button><button class="kp-key" data-d="0">0</button><button class="kp-key del sm" id="kp-delItem">頭↩︎削除</button>
+    </div>
+    <div class="kp-commit">
+      <button class="kp-cbtn h5" id="kp-c5">.（.5）<small>5は不要・次へ</small></button>
+      <button class="kp-cbtn h0" id="kp-c0">✓（.0）<small>そのまま・次へ</small></button>
+    </div>
+    <div class="kp-foot">
+      <button class="kp-clr" id="kp-clear">全クリア</button>
+      <button class="kp-done" id="kp-done">この枝重で確定</button>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
 let history = JSON.parse(localStorage.getItem('budomari_history') || '[]');
+// 表示用とは別に、直近100件のアーカイブ（履歴クリアでは消さない＝再表示用）
+let historyAll = JSON.parse(localStorage.getItem('budomari_history_all') || '[]');
 let currentType = 'set';
 let marginRate = parseFloat(localStorage.getItem('budomari_margin') || '10');
+
+// ── 設定（加工賃・副産物の品目マスタ：名前/単位/火木の固定数量） ──
+// 発注の各行 = name + 数量 + unit（例 name="ガラ10kg×" unit="袋" → ガラ10kg×4袋）
+function defaultConfig(){
+  return { fee:3500, items:[
+    { name:'ガラ10kg×',     unit:'袋',                 tue:'', thu:4 },
+    { name:'背骨10kg×',     unit:'袋',                 tue:'', thu:4 },
+    { name:'ゲンコツ10kg×', unit:'袋',                 tue:'', thu:4 },
+    { name:'ゲンコツ5kg×',  unit:'袋(モモスネなし¥180-)', tue:6,  thu:'' },
+    { name:'脂10kg×',       unit:'袋',                 tue:'', thu:'' },
+    { name:'ハラ脂10kg×',   unit:'袋',                 tue:'', thu:'' },
+    { name:'ロース',        unit:'本',                 tue:'', thu:'' },
+    { name:'カタロース',    unit:'本',                 tue:'', thu:'' },
+    { name:'バラ',          unit:'枚',                 tue:'', thu:'' },
+    { name:'スジナシヒレ',  unit:'kg位',               tue:'', thu:'' }
+  ]};
+}
+let APPCFG = (function(){
+  try { const c = JSON.parse(localStorage.getItem('budomari_config') || 'null'); if (c && Array.isArray(c.items) && c.items.length) return { fee: c.fee || 3500, items: c.items }; } catch(e){}
+  return defaultConfig();
+})();
+function saveConfig(){ localStorage.setItem('budomari_config', JSON.stringify(APPCFG)); }
+function FEE(){ return Number(APPCFG.fee) || 3500; }
+function escHtml(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function bpId(i){ return 'bp-' + i; }
+
+// 副産物の入力欄（品目マスタから生成）
+function renderByproductInputs(){
+  document.getElementById('bp-list').innerHTML = APPCFG.items.map(function(it, i){
+    return '<div class="bp-row"><span class="nm">' + escHtml(it.name) + '</span>'
+         + '<input type="number" id="' + bpId(i) + '" inputmode="decimal" min="0"><span class="su">' + escHtml(it.unit) + '</span></div>';
+  }).join('');
+}
+renderByproductInputs();
 
 // 粗利入力初期化
 document.getElementById('margin-input').value = marginRate;
@@ -743,14 +930,275 @@ document.getElementById('margin-input').addEventListener('input', function() {
   }
 });
 
+// ── 枝重キーパッド（種類別：セット/ハム/パーツ それぞれ1頭ずつ→自動合計・頭数自動） ──
+let lots = { set: [], ham: [], parts: [] };
+try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if (L && L.set && L.ham && L.parts) lots = L; } catch(e){}
+(function(){
+  let buf = '', kpType = 'set';
+  const NAME = { set: 'セット', ham: 'ハム', parts: 'パーツ' };
+  const modal = document.getElementById('kp-modal');
+  const titleEl = document.getElementById('kp-title');
+  const bufEl = document.getElementById('kp-buf'), totalEl = document.getElementById('kp-total'),
+        cntEl = document.getElementById('kp-cnt'), chipsEl = document.getElementById('kp-chips');
+  function sumOf(arr){ let s = 0; for (let i = 0; i < arr.length; i++) s += arr[i]; return s; }
+  function renderKp(){
+    const arr = lots[kpType];
+    bufEl.innerHTML = buf === '' ? '<span class="ph">数字を入力…</span>' : buf;
+    totalEl.innerHTML = sumOf(arr).toFixed(1) + '<small> kg</small>';
+    cntEl.textContent = arr.length + ' 頭';
+    chipsEl.innerHTML = arr.map((v, i) => `<span class="kp-chip" data-i="${i}">${v.toFixed(1)}</span>`).join('');
+    chipsEl.scrollTop = chipsEl.scrollHeight;
+  }
+  function commit(frac){
+    if (buf === '') return;
+    const n = parseInt(buf, 10);
+    if (!isNaN(n)) lots[kpType].push(n + frac);
+    buf = ''; renderKp(); applyAll();
+    if (navigator.vibrate) navigator.vibrate(12);
+  }
+  function applyType(t){
+    const arr = lots[t], s = sumOf(arr);
+    document.getElementById('branch-' + t).value = s > 0 ? s.toFixed(1) : '';
+    document.getElementById('cnt-' + t).textContent = arr.length > 0 ? arr.length + '頭' : '';
+  }
+  function applyAll(){
+    let totW = 0, totN = 0;
+    ['set','ham','parts'].forEach(function(t){ applyType(t); totW += sumOf(lots[t]); totN += lots[t].length; });
+    document.getElementById('branch').value = totW > 0 ? totW.toFixed(1) : '';
+    document.getElementById('heads').value = totN;
+    document.getElementById('heads-disp').textContent = totN + ' 頭';
+    document.getElementById('branch-total-disp').textContent = '枝重 ' + totW.toFixed(1) + 'kg';
+    document.getElementById('fee-disp').textContent = totN + '頭　合計 ' + (totN * FEE()).toLocaleString() + '円';
+    document.getElementById('fee-rate-disp').textContent = '1頭 ' + FEE().toLocaleString() + '円';
+    localStorage.setItem('budomari_lots', JSON.stringify(lots));
+  }
+  // 履歴復元・外部用
+  window.__setLots = function(L){ lots = (L && L.set && L.ham && L.parts) ? L : { set: [], ham: [], parts: [] }; applyAll(); };
+  window.__getLots = function(){ return lots; };
+  window.__lotHeads = function(t){ return lots[t] ? lots[t].length : 0; };
+  window.__lotSum = function(t){ return lots[t] ? sumOf(lots[t]) : 0; };
+
+  document.querySelectorAll('.branch-open').forEach(function(row){
+    row.addEventListener('click', function(){
+      kpType = this.getAttribute('data-type'); buf = '';
+      titleEl.textContent = '⚖️ ' + NAME[kpType] + ' の枝重（.5は左／.0は右✓）';
+      renderKp(); modal.classList.add('show');
+    });
+  });
+  document.getElementById('kp-x').addEventListener('click', function(){ modal.classList.remove('show'); });
+  modal.addEventListener('click', function(e){ if (e.target === modal) modal.classList.remove('show'); });
+  document.querySelectorAll('.kp-key[data-d]').forEach(function(k){
+    k.addEventListener('click', function(){ if (buf.length < 3) buf += this.getAttribute('data-d'); renderKp(); });
+  });
+  document.getElementById('kp-del').addEventListener('click', function(){ buf = buf.slice(0, -1); renderKp(); });
+  document.getElementById('kp-delItem').addEventListener('click', function(){ if (buf !== '') { buf = ''; } else { lots[kpType].pop(); } renderKp(); applyAll(); });
+  document.getElementById('kp-c5').addEventListener('click', function(){ commit(0.5); });
+  document.getElementById('kp-c0').addEventListener('click', function(){ commit(0.0); });
+  document.getElementById('kp-clear').addEventListener('click', function(){ lots[kpType] = []; buf = ''; renderKp(); applyAll(); });
+  document.getElementById('kp-done').addEventListener('click', function(){ applyAll(); modal.classList.remove('show'); });
+  chipsEl.addEventListener('click', function(e){
+    const c = e.target.closest('.kp-chip');
+    if (c) { lots[kpType].splice(parseInt(c.getAttribute('data-i'), 10), 1); renderKp(); applyAll(); }
+  });
+  applyAll();   // 起動時に保存済み枝重を反映
+})();
+
+// ── 入力途中の自動保存（下書き）：加重平均・出来上がり・副産物も打った瞬間に保存 ──
+function draftFields(){
+  const fixed = ['weighted-price','output-set','output-ham','output-parts','bp-other'];
+  return fixed.concat(APPCFG.items.map(function(_, i){ return bpId(i); }));
+}
+function saveDraft(){
+  const d = {};
+  draftFields().forEach(function(id){ const el = document.getElementById(id); if (el) d[id] = el.value; });
+  d.type = currentType;
+  localStorage.setItem('budomari_draft', JSON.stringify(d));
+}
+function restoreDraft(){
+  try {
+    const d = JSON.parse(localStorage.getItem('budomari_draft') || '{}');
+    draftFields().forEach(function(id){ const el = document.getElementById(id); if (el && d[id] != null) el.value = d[id]; });
+    if (d.type) {
+      currentType = d.type;
+      document.querySelectorAll('.type-btn').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-type') === d.type); });
+    }
+  } catch(e){}
+}
+function attachDraftListeners(){
+  draftFields().forEach(function(id){ const el = document.getElementById(id); if (el) { el.removeEventListener('input', saveDraft); el.addEventListener('input', saveDraft); } });
+}
+attachDraftListeners();
+document.querySelectorAll('.type-btn').forEach(function(btn){ btn.addEventListener('click', function(){ setTimeout(saveDraft, 0); }); });
+restoreDraft();
+
+// ── 受取曜日に連動した副産物の固定発注（空欄のみ自動記入・上書き可） ──
+// 火曜受取: ゲンコツ5kg×6袋 ／ 木曜受取: ガラ×4・背骨×4・ゲンコツ10kg×4
+function applyByproductDefaults(){
+  const youbi = nextReceiptYoubi();   // '火' or '木'
+  const day = youbi === '火' ? 'tue' : (youbi === '木' ? 'thu' : null);
+  if (!day) return;
+  APPCFG.items.forEach(function(it, i){
+    const el = document.getElementById(bpId(i));
+    const dv = it[day];
+    if (el && (el.value === '' || el.value == null) && dv != null && dv !== '') el.value = dv;
+  });
+}
+
+// ── 設定画面（加工賃・品目マスタ：編集モードで改名/単位/火木/上下/追加削除／2段階確認） ──
+let setEditing = false;
+let editItems = null;
+function readEditInputs(){
+  if (!editItems) return;
+  document.querySelectorAll('#set-items .set-item').forEach(function(row){
+    const i = parseInt(row.getAttribute('data-i'), 10);
+    if (!editItems[i]) return;
+    editItems[i].name = row.querySelector('.si-name').value;
+    editItems[i].unit = row.querySelector('.si-unit').value;
+    const tu = row.querySelector('.si-tue').value, th = row.querySelector('.si-thu').value;
+    editItems[i].tue = (tu === '' ? '' : parseFloat(tu));
+    editItems[i].thu = (th === '' ? '' : parseFloat(th));
+  });
+}
+function renderSettings(){
+  document.getElementById('set-edit-btn').textContent = setEditing ? '✓ 編集を終える' : '✏️ 品目を編集';
+  document.getElementById('set-add').style.display = setEditing ? 'block' : 'none';
+  const cont = document.getElementById('set-items');
+  if (setEditing) {
+    cont.innerHTML = editItems.map(function(it, i){
+      return '<div class="set-item" data-i="' + i + '" style="border:1px solid var(--border);border-radius:10px;padding:7px;margin-bottom:7px;background:#fff;">'
+        + '<div style="display:flex;gap:5px;margin-bottom:5px;">'
+        +   '<input class="si-name" placeholder="品目名" value="' + escHtml(it.name) + '" style="flex:2;min-width:0;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:14px;">'
+        +   '<input class="si-unit" placeholder="単位" value="' + escHtml(it.unit) + '" style="flex:1;min-width:0;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:14px;">'
+        + '</div>'
+        + '<div style="display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;">'
+        +   '🔵火<input class="si-tue" type="number" min="0" value="' + (it.tue === '' || it.tue == null ? '' : it.tue) + '" style="width:44px;padding:6px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:14px;">'
+        +   '🟢木<input class="si-thu" type="number" min="0" value="' + (it.thu === '' || it.thu == null ? '' : it.thu) + '" style="width:44px;padding:6px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:14px;">'
+        +   '<span style="flex:1;"></span>'
+        +   '<button class="si-up"   data-i="' + i + '" style="padding:6px 9px;border:1px solid var(--border);background:#fff;border-radius:7px;">↑</button>'
+        +   '<button class="si-down" data-i="' + i + '" style="padding:6px 9px;border:1px solid var(--border);background:#fff;border-radius:7px;">↓</button>'
+        +   '<button class="si-del"  data-i="' + i + '" style="padding:6px 9px;border:1px solid #f3c0bb;background:#fff;color:var(--red);border-radius:7px;">🗑</button>'
+        + '</div></div>';
+    }).join('');
+  } else {
+    cont.innerHTML = APPCFG.items.map(function(it){
+      const fx = [];
+      if (it.tue !== '' && it.tue != null) fx.push('火' + it.tue);
+      if (it.thu !== '' && it.thu != null) fx.push('木' + it.thu);
+      return '<div class="bp-row"><span class="nm">' + escHtml(it.name) + escHtml(it.unit) + '</span>'
+        + '<span class="su" style="color:var(--accent2);">' + (fx.length ? '固定 ' + fx.join('・') : '') + '</span></div>';
+    }).join('');
+  }
+}
+function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-webhook').value = loadWebhook(); document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
+function closeSettings(){ document.getElementById('set-modal').classList.remove('show'); }
+document.getElementById('settings-btn').addEventListener('click', openSettings);
+document.getElementById('set-x').addEventListener('click', closeSettings);
+document.getElementById('set-modal').addEventListener('click', function(e){ if (e.target === this) closeSettings(); });
+document.getElementById('set-edit-btn').addEventListener('click', function(){
+  if (!setEditing) { editItems = JSON.parse(JSON.stringify(APPCFG.items)); setEditing = true; }
+  else { readEditInputs(); setEditing = false; }
+  renderSettings();
+});
+document.getElementById('set-add').addEventListener('click', function(){ readEditInputs(); editItems.push({ name:'', unit:'袋', tue:'', thu:'' }); renderSettings(); });
+document.getElementById('set-items').addEventListener('click', function(e){
+  const up = e.target.closest('.si-up'), dn = e.target.closest('.si-down'), del = e.target.closest('.si-del');
+  if (!up && !dn && !del) return;
+  readEditInputs();
+  const i = parseInt((up || dn || del).getAttribute('data-i'), 10);
+  if (up && i > 0) { const t = editItems[i-1]; editItems[i-1] = editItems[i]; editItems[i] = t; }
+  else if (dn && i < editItems.length - 1) { const t = editItems[i+1]; editItems[i+1] = editItems[i]; editItems[i] = t; }
+  else if (del) { editItems.splice(i, 1); }
+  renderSettings();
+});
+document.getElementById('set-save').addEventListener('click', function(){ document.getElementById('set-confirm').style.display = 'block'; this.style.display = 'none'; });
+document.getElementById('set-cancel').addEventListener('click', function(){ document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; });
+document.getElementById('set-confirm-yes').addEventListener('click', function(){
+  if (setEditing) readEditInputs();
+  const fee = parseFloat(document.getElementById('set-fee').value) || 3500;
+  const items = (setEditing ? editItems : APPCFG.items)
+    .map(function(it){ return { name:(it.name || '').trim(), unit:(it.unit || '').trim(), tue:it.tue, thu:it.thu }; })
+    .filter(function(it){ return it.name !== ''; });
+  APPCFG = { fee: fee, items: items };
+  saveConfig();
+  // 記録先スプレッドシート（Webhook URL）を保存
+  const wh = document.getElementById('set-webhook').value.trim();
+  if (wh) localStorage.setItem('budomari_webhook', wh);
+  else localStorage.removeItem('budomari_webhook');
+  setEditing = false; editItems = null;
+  renderByproductInputs();
+  attachDraftListeners();
+  applyByproductDefaults();
+  window.__setLots(window.__getLots());   // 加工賃合計・表示を再計算
+  closeSettings();
+  alert('設定を変更しました。');
+});
+applyByproductDefaults();   // 入力段階（起動時）に今日の曜日→受取曜日で自動記入
+
+// 新しいロット（下書き・枝重をクリア／粗利は維持）
+document.getElementById('newlot-btn').addEventListener('click', function(){
+  if (!confirm('入力中の内容をクリアして新しいロットを始めますか？')) return;
+  localStorage.removeItem('budomari_draft');
+  draftFields().forEach(function(id){ const el = document.getElementById(id); if (el) el.value = ''; });
+  localStorage.removeItem('budomari_lots');
+  window.__setLots(null);
+  document.getElementById('msg-text').value = '';
+  document.getElementById('results-area').style.display = 'none';
+  applyByproductDefaults();   // クリア後も曜日連動の固定発注を再セット
+});
+
+// ── 預け連絡文の自動生成＋コピー ──
+function nextReceiptYoubi(){
+  // 入力日の「次の火曜or木曜」（火木受取）
+  const names = ['日','月','火','水','木','金','土'];
+  const wd = new Date().getDay();
+  for (let i = 1; i <= 7; i++){ const w = (wd + i) % 7; if (w === 2 || w === 4) return names[w]; }
+  return '';
+}
+function buildMessage(){
+  const totN = document.getElementById('heads').value || '0';
+  const totW = document.getElementById('branch').value || '';
+  const tanka = document.getElementById('weighted-price').value || '';
+  const names = ['日','月','火','水','木','金','土'];
+  const td = new Date();
+  const todayStr = (td.getMonth() + 1) + '/' + td.getDate() + '(' + names[td.getDay()] + ')';
+  let s = nextReceiptYoubi() + '曜日受け取り\n';
+  s += todayStr + '預け' + totN + '頭(' + totW + 'kg、¥' + tanka + '-)\n\n';
+  const setN = window.__lotHeads('set'), hamN = window.__lotHeads('ham'), partsN = window.__lotHeads('parts');
+  if (setN > 0)   s += '●パック　0.5頭セット' + setN + '頭\n';
+  if (hamN > 0)   s += '●パック　18.5cmハムロース　パーツ計量' + hamN + '頭\n';
+  if (partsN > 0) s += '●パック　普通ロース　パーツ計量' + partsN + '頭\n';
+  const bp = [];
+  APPCFG.items.forEach(function(it, i){
+    const el = document.getElementById(bpId(i));
+    const v = el ? el.value : '';
+    if (v && parseFloat(v) > 0) bp.push(it.name + v + it.unit);
+  });
+  const other = document.getElementById('bp-other').value.trim();
+  if (other) bp.push(other);
+  if (bp.length) s += '\n' + bp.join('\n') + '\n';
+  s += '\nお願いします。';
+  document.getElementById('msg-text').value = s;
+}
+document.getElementById('msg-build').addEventListener('click', buildMessage);
+document.getElementById('msg-copy').addEventListener('click', function(){
+  const t = document.getElementById('msg-text');
+  if (!t.value.trim()) buildMessage();
+  t.focus(); t.select(); t.setSelectionRange(0, 99999);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value);
+  else document.execCommand('copy');
+  const b = this, o = b.innerHTML;
+  b.classList.add('copied'); b.innerHTML = '<span>✅</span> コピーしました！';
+  setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
+});
+
 // ── ログイン処理 ──
 const PASSWORD = '2317';
 const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 
 // ── スプレッドシート記録（GAS Webhook・追記専用） ──
 // GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
-const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec';
-function loadWebhook() { return WEBHOOK_URL || localStorage.getItem('budomari_webhook') || ''; }
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec'; // 本番＝記録先スプレッドシート（既定。⚙設定で上書き可）
+function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL || ''; }
 function postToSheet(entry) {
   const url = loadWebhook();
   if (!url) return; // 未設定なら端末内の履歴のみ
@@ -877,7 +1325,7 @@ function calculate() {
   // UI更新
   document.getElementById('result-title').textContent = label;
   document.getElementById('r-heads').textContent  = `${heads} 頭`;
-  document.getElementById('r-processing-fee').textContent = `${(heads * 3500).toLocaleString()} 円（3,500円/頭）`;
+  document.getElementById('r-processing-fee').textContent = `${(heads * FEE()).toLocaleString()} 円（${FEE().toLocaleString()}円/頭）`;
   document.getElementById('r-branch').textContent = `${branch.toFixed(1)} kg`;
   document.getElementById('r-output').textContent = outParts.length > 1
     ? `${output.toFixed(1)} kg（${breakdown}）`
@@ -889,12 +1337,12 @@ function calculate() {
   // 加重平均・計量後原価・加工後原価単価
   if (!isNaN(wPrice) && wPrice > 0) {
     const unitCost = Math.round(branch * wPrice / output);
-    const processingCost = Math.round((branch * wPrice + heads * 3500) / output);
+    const processingCost = Math.round((branch * wPrice + heads * FEE()) / output);
     const targetPrice = Math.round(processingCost / (1 - marginRate / 100));
     document.getElementById('r-unit-cost').textContent = unitCost.toLocaleString() + ' 円/kg';
     document.getElementById('r-weighted').textContent = wPrice.toLocaleString() + ' 円/kg';
     document.getElementById('r-processing').textContent = processingCost.toLocaleString() + ' 円/kg';
-    document.getElementById('r-target').textContent = targetPrice.toLocaleString() + ' 円/kg';
+    document.getElementById('r-target').innerHTML = '<span style="color:var(--muted);font-weight:700;font-size:.85em;">粗利' + marginRate + '%</span>　' + targetPrice.toLocaleString() + ' 円/kg';
     document.getElementById('r-unit-cost-row').style.display = '';
     document.getElementById('r-weighted-row').style.display = '';
     document.getElementById('r-processing-row').style.display = '';
@@ -910,12 +1358,35 @@ function calculate() {
   let msg = `${label}\n枝重\u3000\u3000\u3000${branch.toFixed(1)}k\n出来上がり${output.toFixed(1)}k${outParts.length>1?'（'+breakdown+'）':''}\n歩留\u3000\u3000\u3000${yieldStr}%`;
   if (!isNaN(wPrice) && wPrice > 0) {
     const unitCost = Math.round(branch * wPrice / output);
-    const processingCost = Math.round((branch * wPrice + heads * 3500) / output);
+    const processingCost = Math.round((branch * wPrice + heads * FEE()) / output);
     const targetPrice = Math.round(processingCost / (1 - marginRate / 100));
     msg += `\n加重平均単価　${wPrice.toLocaleString()}円/kg\n計量後原価単価　${unitCost.toLocaleString()}円/kg\n加工込み原価単価　${processingCost.toLocaleString()}円/kg\n目標販売単価(粗利${marginRate}%)　${targetPrice.toLocaleString()}円/kg`;
   }
   msg += '\nご確認よろしくお願いいたします。';
   document.getElementById('msg-box').textContent = msg;
+
+  // 種類別の歩留（薄緑）＝各出来上がり ÷ 各枝重。左横に種類別の目標販売単価（簡易版）
+  (function(){
+    const map = [['set','output-set','r-yset-row','r-yset'],['ham','output-ham','r-yham-row','r-yham'],['parts','output-parts','r-yparts-row','r-yparts']];
+    map.forEach(function(m){
+      const ow = parseFloat(document.getElementById(m[1]).value);
+      const bw = window.__lotSum(m[0]);
+      const hn = window.__lotHeads(m[0]);
+      if (!isNaN(ow) && ow > 0 && bw > 0){
+        const y = (ow / bw * 100).toFixed(1) + '%';
+        let tgt = '';
+        if (!isNaN(wPrice) && wPrice > 0) {
+          const pc = (bw * wPrice + hn * FEE()) / ow;       // この種類の加工込み原価単価
+          const t = Math.round(pc / (1 - marginRate / 100)); // 目標販売単価
+          tgt = '<span style="color:var(--muted);font-weight:700;">粗利' + marginRate + '%</span> <span style="color:var(--green);font-weight:800;">目標 ' + t.toLocaleString() + '円/kg</span>　';
+        }
+        document.getElementById(m[3]).innerHTML = tgt + y;
+        document.getElementById(m[2]).style.display = '';
+      } else {
+        document.getElementById(m[2]).style.display = 'none';
+      }
+    });
+  })();
 
   document.getElementById('results-area').style.display = 'block';
   document.getElementById('copy-btn').classList.remove('copied');
@@ -928,12 +1399,16 @@ function calculate() {
 
   // 履歴保存
   const unitCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(branch * wPrice / output) : null;
-  const processingCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round((branch * wPrice + heads * 3500) / output) : null;
+  const processingCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round((branch * wPrice + heads * FEE()) / output) : null;
   const targetPriceSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(processingCostSave / (1 - marginRate / 100)) : null;
-  const entry = { heads, branch, output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
+  const entry = { heads, branch, lots: JSON.parse(JSON.stringify(window.__getLots())), output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
   history.unshift(entry);
   if (history.length > 20) history = history.slice(0, 20);
   localStorage.setItem('budomari_history', JSON.stringify(history));
+  // アーカイブ（直近100件・履歴クリアでは消えない）
+  historyAll.unshift(entry);
+  if (historyAll.length > 100) historyAll = historyAll.slice(0, 100);
+  localStorage.setItem('budomari_history_all', JSON.stringify(historyAll));
   renderHistory();
 
   // スプレッドシートにも記録（追記専用・台帳兼バックアップ）
@@ -974,6 +1449,9 @@ function yieldColor(y) {
 function renderHistory() {
   const list = document.getElementById('history-list');
   const clearBtn = document.getElementById('clear-btn');
+  const restoreBtn = document.getElementById('restore-btn');
+  // 表示中より多くアーカイブがあるとき「再表示」を出す
+  restoreBtn.style.display = (historyAll.length > history.length) ? 'block' : 'none';
   if (history.length === 0) {
     list.innerHTML = '<div class="empty-history">履歴はまだありません</div>';
     clearBtn.style.display = 'none';
@@ -1060,8 +1538,16 @@ function deleteHistory(i) {
 
 function loadHistory(i) {
   const e = history[i];
-  document.getElementById('heads').value  = e.heads;
-  document.getElementById('branch').value = e.branch;
+  if (e.lots && e.lots.set) {
+    window.__setLots(e.lots);                   // 種類別の枝重ごと復元（頭数も自動）
+  } else {
+    window.__setLots(null);                     // 旧データは合計のみ
+    document.getElementById('branch').value = e.branch || '';
+    document.getElementById('heads').value = e.heads || 0;
+    document.getElementById('heads-disp').textContent = (e.heads || 0) + ' 頭';
+    document.getElementById('branch-total-disp').textContent = '枝重 ' + (parseFloat(e.branch)||0).toFixed(1) + 'kg';
+    document.getElementById('fee-disp').textContent = (e.heads || 0) + '頭　合計 ' + ((e.heads || 0) * FEE()).toLocaleString() + '円';
+  }
   // 旧データ（内訳なし）はセット欄に合計を入れる
   document.getElementById('output-set').value   = (e.oSet != null) ? (e.oSet || '') : (e.output || '');
   document.getElementById('output-ham').value   = (e.oHam != null && e.oHam) ? e.oHam : '';
@@ -1076,9 +1562,9 @@ function loadHistory(i) {
   // 結果は閉じて、入力欄にスクロール（訂正しやすいように）
   document.getElementById('results-area').style.display = 'none';
   document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  // 訂正しやすいよう、最初の入力欄にフォーカス
+  // 訂正しやすいよう、先頭の入力欄（加重平均単価）にフォーカス
   setTimeout(function() {
-    document.getElementById('heads').focus();
+    document.getElementById('weighted-price').focus();
   }, 300);
 }
 
@@ -1098,17 +1584,14 @@ function clearHistory() {
 document.getElementById('calc-btn').addEventListener('click', calculate);
 document.getElementById('copy-btn').addEventListener('click', copyMessage);
 document.getElementById('clear-btn').addEventListener('click', clearHistory);
-
-// 記録先スプレッドシート（表示のみ・編集不可）
-document.getElementById('settings-link').addEventListener('click', function(e) {
-  e.preventDefault();
-  const on = !!loadWebhook();
-  alert(
-    '記録先スプレッドシート\n\n' +
-    (on
-      ? '状態：オン（計算するたびに自動でスプレッドシートに記録されます）\n\n※記録先は固定設定のため、ここでは変更できません。'
-      : '状態：オフ（端末内のみ）')
-  );
+document.getElementById('restore-btn').addEventListener('click', function() {
+  // 直近100件のうち、歩留まり60〜80%のものだけ再表示
+  history = historyAll.slice(0, 100).filter(function(e){
+    const y = parseFloat(e.yield_);
+    return !isNaN(y) && y >= 60 && y <= 80;
+  });
+  localStorage.setItem('budomari_history', JSON.stringify(history));
+  renderHistory();
 });
 
 // Enterキーで計算
