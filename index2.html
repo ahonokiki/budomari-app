@@ -629,55 +629,64 @@
       </div>
     </div>
 
-    <!-- ② 枝重（タップでキーパッド・1頭ずつ） -->
+    <!-- ② 枝重（種類別・タップでキーパッド・1頭ずつ） -->
+    <input type="hidden" id="heads">
+    <input type="hidden" id="branch">
     <div class="field">
-      <label>枝重（1頭ずつ入力）</label>
-      <div class="input-row" id="branch-open" style="cursor:pointer;">
-        <input type="number" id="branch" inputmode="decimal" placeholder="タップして枝重を入力" min="0" step="0.1" readonly style="cursor:pointer; background:transparent;">
-        <span class="unit" id="branch-cnt" style="color:var(--accent2);"></span>
+      <label>枝重（種類別・タップで1頭ずつ入力）</label>
+      <div class="input-row branch-open" data-type="set" style="cursor:pointer; margin-bottom:8px;">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">セット</span>
+        <input type="number" id="branch-set" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
+        <span class="unit" id="cnt-set" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+      <div class="input-row branch-open" data-type="ham" style="cursor:pointer; margin-bottom:8px;">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">ハム</span>
+        <input type="number" id="branch-ham" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
+        <span class="unit" id="cnt-ham" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+      <div class="input-row branch-open" data-type="parts" style="cursor:pointer;">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">パーツ</span>
+        <input type="number" id="branch-parts" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
+        <span class="unit" id="cnt-parts" style="color:var(--accent2);"></span>
         <span class="unit">kg ▸</span>
       </div>
     </div>
 
-    <!-- ③ 頭数（枝重の数で自動） -->
+    <!-- ③ 合計（頭数・枝重・自動） -->
     <div class="field">
-      <label>頭数（枝重の数で自動）</label>
-      <input type="hidden" id="heads">
+      <label>合計（自動）</label>
       <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
         <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:var(--accent);" id="heads-disp">0 頭</span>
+        <span class="unit" id="branch-total-disp" style="color:var(--accent); white-space:nowrap;">枝重 0.0kg</span>
       </div>
     </div>
 
-    <!-- 加工賃（固定・記入不可） -->
+    <!-- 加工賃（固定・記入不可）：合計頭数を金額の左に表示 -->
     <div class="field">
       <label>加工賃</label>
       <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
         <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:#aab4c8;">1頭 3,500円（固定）</span>
-        <span class="unit" id="fee-disp" style="color:var(--accent); white-space:nowrap;">合計 0円</span>
+        <span class="unit" id="fee-disp" style="color:var(--accent); white-space:nowrap;">0頭　合計 0円</span>
       </div>
     </div>
 
-    <!-- ④ 種類別　頭数・出来上がり重量（後日入力） -->
+    <!-- ④ 種類別　出来上がり重量（後日入力） -->
     <div class="field">
-      <label>種類別　頭数・出来上がり（後日入力）</label>
+      <label>種類別　出来上がり重量（後日入力）</label>
       <div class="input-row" style="margin-bottom:8px;">
-        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">セット</span>
-        <input type="number" id="set-heads" inputmode="decimal" placeholder="0" min="0" step="0.5" style="max-width:58px; text-align:center;">
-        <span class="unit" style="padding:0 2px;">頭</span>
+        <span class="unit" style="padding:0 4px 0 12px; min-width:46px; text-align:left;">セット</span>
         <input type="number" id="output-set" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
       <div class="input-row" style="margin-bottom:8px;">
-        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">ハム</span>
-        <input type="number" id="ham-heads" inputmode="decimal" placeholder="0" min="0" step="0.5" style="max-width:58px; text-align:center;">
-        <span class="unit" style="padding:0 2px;">頭</span>
+        <span class="unit" style="padding:0 4px 0 12px; min-width:46px; text-align:left;">ハム</span>
         <input type="number" id="output-ham" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
       <div class="input-row">
-        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">パーツ</span>
-        <input type="number" id="parts-heads" inputmode="decimal" placeholder="0" min="0" step="0.5" style="max-width:58px; text-align:center;">
-        <span class="unit" style="padding:0 2px;">頭</span>
+        <span class="unit" style="padding:0 4px 0 12px; min-width:46px; text-align:left;">パーツ</span>
         <input type="number" id="output-parts" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
@@ -775,7 +784,7 @@
 <div class="kp-modal" id="kp-modal">
   <div class="kp-sheet">
     <div class="kp-head">
-      <h3>⚖️ 枝重を入力（.5は左／.0は右✓）</h3>
+      <h3 id="kp-title">⚖️ 枝重を入力（.5は左／.0は右✓）</h3>
       <button class="x" id="kp-x">✕</button>
     </div>
     <div class="kp-total"><div class="v" id="kp-total">0.0<small> kg</small></div><div class="cnt" id="kp-cnt">0 頭</div></div>
@@ -815,64 +824,79 @@ document.getElementById('margin-input').addEventListener('input', function() {
   }
 });
 
-// ── 枝重キーパッド（複数の枝肉重量を入力→自動合計） ──
-let branchItems = JSON.parse(localStorage.getItem('budomari_branchItems') || '[]');
+// ── 枝重キーパッド（種類別：セット/ハム/パーツ それぞれ1頭ずつ→自動合計・頭数自動） ──
+let lots = { set: [], ham: [], parts: [] };
+try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if (L && L.set && L.ham && L.parts) lots = L; } catch(e){}
 (function(){
-  let buf = '';
+  let buf = '', kpType = 'set';
+  const NAME = { set: 'セット', ham: 'ハム', parts: 'パーツ' };
   const modal = document.getElementById('kp-modal');
+  const titleEl = document.getElementById('kp-title');
   const bufEl = document.getElementById('kp-buf'), totalEl = document.getElementById('kp-total'),
         cntEl = document.getElementById('kp-cnt'), chipsEl = document.getElementById('kp-chips');
-  function sum(){ let s = 0; for (let i = 0; i < branchItems.length; i++) s += branchItems[i]; return s; }
-  function render(){
+  function sumOf(arr){ let s = 0; for (let i = 0; i < arr.length; i++) s += arr[i]; return s; }
+  function renderKp(){
+    const arr = lots[kpType];
     bufEl.innerHTML = buf === '' ? '<span class="ph">数字を入力…</span>' : buf;
-    totalEl.innerHTML = sum().toFixed(1) + '<small> kg</small>';
-    cntEl.textContent = branchItems.length + ' 頭';
-    chipsEl.innerHTML = branchItems.map((v, i) => `<span class="kp-chip" data-i="${i}">${v.toFixed(1)}</span>`).join('');
+    totalEl.innerHTML = sumOf(arr).toFixed(1) + '<small> kg</small>';
+    cntEl.textContent = arr.length + ' 頭';
+    chipsEl.innerHTML = arr.map((v, i) => `<span class="kp-chip" data-i="${i}">${v.toFixed(1)}</span>`).join('');
     chipsEl.scrollTop = chipsEl.scrollHeight;
   }
   function commit(frac){
     if (buf === '') return;
     const n = parseInt(buf, 10);
-    if (!isNaN(n)) branchItems.push(n + frac);
-    buf = ''; render();
+    if (!isNaN(n)) lots[kpType].push(n + frac);
+    buf = ''; renderKp(); applyAll();
     if (navigator.vibrate) navigator.vibrate(12);
   }
-  function applyToField(){
-    const s = sum();
-    const n = branchItems.length;
-    document.getElementById('branch').value = s > 0 ? s.toFixed(1) : '';
-    document.getElementById('branch-cnt').textContent = n > 0 ? n + '頭' : '';
-    // 頭数は枝重の数で自動・加工料金(3,500円/頭)も自動表示
-    document.getElementById('heads').value = n;
-    document.getElementById('heads-disp').textContent = n + ' 頭';
-    document.getElementById('fee-disp').textContent = '合計 ' + (n * 3500).toLocaleString() + '円';
-    localStorage.setItem('budomari_branchItems', JSON.stringify(branchItems));
+  function applyType(t){
+    const arr = lots[t], s = sumOf(arr);
+    document.getElementById('branch-' + t).value = s > 0 ? s.toFixed(1) : '';
+    document.getElementById('cnt-' + t).textContent = arr.length > 0 ? arr.length + '頭' : '';
   }
-  // 履歴復元・外部から呼ぶ用
-  window.__setBranchItems = function(arr){ branchItems = Array.isArray(arr) ? arr.slice() : []; applyToField(); };
-  window.__applyBranch = applyToField;
+  function applyAll(){
+    let totW = 0, totN = 0;
+    ['set','ham','parts'].forEach(function(t){ applyType(t); totW += sumOf(lots[t]); totN += lots[t].length; });
+    document.getElementById('branch').value = totW > 0 ? totW.toFixed(1) : '';
+    document.getElementById('heads').value = totN;
+    document.getElementById('heads-disp').textContent = totN + ' 頭';
+    document.getElementById('branch-total-disp').textContent = '枝重 ' + totW.toFixed(1) + 'kg';
+    document.getElementById('fee-disp').textContent = totN + '頭　合計 ' + (totN * 3500).toLocaleString() + '円';
+    localStorage.setItem('budomari_lots', JSON.stringify(lots));
+  }
+  // 履歴復元・外部用
+  window.__setLots = function(L){ lots = (L && L.set && L.ham && L.parts) ? L : { set: [], ham: [], parts: [] }; applyAll(); };
+  window.__getLots = function(){ return lots; };
+  window.__lotHeads = function(t){ return lots[t] ? lots[t].length : 0; };
 
-  document.getElementById('branch-open').addEventListener('click', function(){ buf = ''; render(); modal.classList.add('show'); });
+  document.querySelectorAll('.branch-open').forEach(function(row){
+    row.addEventListener('click', function(){
+      kpType = this.getAttribute('data-type'); buf = '';
+      titleEl.textContent = '⚖️ ' + NAME[kpType] + ' の枝重（.5は左／.0は右✓）';
+      renderKp(); modal.classList.add('show');
+    });
+  });
   document.getElementById('kp-x').addEventListener('click', function(){ modal.classList.remove('show'); });
   modal.addEventListener('click', function(e){ if (e.target === modal) modal.classList.remove('show'); });
   document.querySelectorAll('.kp-key[data-d]').forEach(function(k){
-    k.addEventListener('click', function(){ if (buf.length < 3) buf += this.getAttribute('data-d'); render(); });
+    k.addEventListener('click', function(){ if (buf.length < 3) buf += this.getAttribute('data-d'); renderKp(); });
   });
-  document.getElementById('kp-del').addEventListener('click', function(){ buf = buf.slice(0, -1); render(); });
-  document.getElementById('kp-delItem').addEventListener('click', function(){ if (buf !== '') { buf = ''; } else { branchItems.pop(); } render(); });
+  document.getElementById('kp-del').addEventListener('click', function(){ buf = buf.slice(0, -1); renderKp(); });
+  document.getElementById('kp-delItem').addEventListener('click', function(){ if (buf !== '') { buf = ''; } else { lots[kpType].pop(); } renderKp(); applyAll(); });
   document.getElementById('kp-c5').addEventListener('click', function(){ commit(0.5); });
   document.getElementById('kp-c0').addEventListener('click', function(){ commit(0.0); });
-  document.getElementById('kp-clear').addEventListener('click', function(){ branchItems = []; buf = ''; render(); });
-  document.getElementById('kp-done').addEventListener('click', function(){ applyToField(); modal.classList.remove('show'); });
+  document.getElementById('kp-clear').addEventListener('click', function(){ lots[kpType] = []; buf = ''; renderKp(); applyAll(); });
+  document.getElementById('kp-done').addEventListener('click', function(){ applyAll(); modal.classList.remove('show'); });
   chipsEl.addEventListener('click', function(e){
     const c = e.target.closest('.kp-chip');
-    if (c) { branchItems.splice(parseInt(c.getAttribute('data-i'), 10), 1); render(); }
+    if (c) { lots[kpType].splice(parseInt(c.getAttribute('data-i'), 10), 1); renderKp(); applyAll(); }
   });
-  applyToField();   // 起動時に保存済み枝重を反映
+  applyAll();   // 起動時に保存済み枝重を反映
 })();
 
 // ── 入力途中の自動保存（下書き）：加重平均・出来上がりも打った瞬間に保存 ──
-const DRAFT_FIELDS = ['weighted-price','set-heads','output-set','ham-heads','output-ham','parts-heads','output-parts'];
+const DRAFT_FIELDS = ['weighted-price','output-set','output-ham','output-parts'];
 function saveDraft(){
   const d = {};
   DRAFT_FIELDS.forEach(function(id){ d[id] = document.getElementById(id).value; });
@@ -898,7 +922,8 @@ document.getElementById('newlot-btn').addEventListener('click', function(){
   if (!confirm('入力中の内容をクリアして新しいロットを始めますか？')) return;
   localStorage.removeItem('budomari_draft');
   DRAFT_FIELDS.forEach(function(id){ document.getElementById(id).value = ''; });
-  window.__setBranchItems([]);
+  localStorage.removeItem('budomari_lots');
+  window.__setLots(null);
   document.getElementById('results-area').style.display = 'none';
 });
 
@@ -1089,7 +1114,7 @@ function calculate() {
   const unitCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(branch * wPrice / output) : null;
   const processingCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round((branch * wPrice + heads * 3500) / output) : null;
   const targetPriceSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(processingCostSave / (1 - marginRate / 100)) : null;
-  const entry = { heads, branch, branchItems: branchItems.slice(), output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
+  const entry = { heads, branch, lots: JSON.parse(JSON.stringify(window.__getLots())), output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
   history.unshift(entry);
   if (history.length > 20) history = history.slice(0, 20);
   localStorage.setItem('budomari_history', JSON.stringify(history));
@@ -1219,16 +1244,15 @@ function deleteHistory(i) {
 
 function loadHistory(i) {
   const e = history[i];
-  if (e.branchItems && e.branchItems.length) {
-    window.__setBranchItems(e.branchItems);     // 内訳ごと復元（頭数も自動）
+  if (e.lots && e.lots.set) {
+    window.__setLots(e.lots);                   // 種類別の枝重ごと復元（頭数も自動）
   } else {
-    window.__setBranchItems([]);                // 旧データは合計のみ
-    document.getElementById('branch').value = e.branch;
-    document.getElementById('branch-cnt').textContent = '';
-    // 旧データは頭数を手入力値から復元
-    document.getElementById('heads').value = e.heads;
+    window.__setLots(null);                     // 旧データは合計のみ
+    document.getElementById('branch').value = e.branch || '';
+    document.getElementById('heads').value = e.heads || 0;
     document.getElementById('heads-disp').textContent = (e.heads || 0) + ' 頭';
-    document.getElementById('fee-disp').textContent = '合計 ' + ((e.heads || 0) * 3500).toLocaleString() + '円';
+    document.getElementById('branch-total-disp').textContent = '枝重 ' + (parseFloat(e.branch)||0).toFixed(1) + 'kg';
+    document.getElementById('fee-disp').textContent = (e.heads || 0) + '頭　合計 ' + ((e.heads || 0) * 3500).toLocaleString() + '円';
   }
   // 旧データ（内訳なし）はセット欄に合計を入れる
   document.getElementById('output-set').value   = (e.oSet != null) ? (e.oSet || '') : (e.output || '');
