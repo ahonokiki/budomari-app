@@ -967,6 +967,21 @@ DRAFT_FIELDS.forEach(function(id){ document.getElementById(id).addEventListener(
 document.querySelectorAll('.type-btn').forEach(function(btn){ btn.addEventListener('click', function(){ setTimeout(saveDraft, 0); }); });
 restoreDraft();
 
+// ── 受取曜日に連動した副産物の固定発注（空欄のみ自動記入・上書き可） ──
+// 火曜受取: ゲンコツ5kg×6袋 ／ 木曜受取: ガラ×4・背骨×4・ゲンコツ10kg×4
+function applyByproductDefaults(){
+  const youbi = nextReceiptYoubi();   // '火' or '木'
+  function setIfEmpty(id, val){ const el = document.getElementById(id); if (el && (el.value === '' || el.value == null)) el.value = val; }
+  if (youbi === '火') {
+    setIfEmpty('bp-genkotsu5', '6');
+  } else if (youbi === '木') {
+    setIfEmpty('bp-gara', '4');
+    setIfEmpty('bp-sebone', '4');
+    setIfEmpty('bp-genkotsu10', '4');
+  }
+}
+applyByproductDefaults();   // 入力段階（起動時）に今日の曜日→受取曜日で自動記入
+
 // 新しいロット（下書き・枝重をクリア／粗利は維持）
 document.getElementById('newlot-btn').addEventListener('click', function(){
   if (!confirm('入力中の内容をクリアして新しいロットを始めますか？')) return;
@@ -976,6 +991,7 @@ document.getElementById('newlot-btn').addEventListener('click', function(){
   window.__setLots(null);
   document.getElementById('msg-text').value = '';
   document.getElementById('results-area').style.display = 'none';
+  applyByproductDefaults();   // クリア後も曜日連動の固定発注を再セット
 });
 
 // ── 預け連絡文の自動生成＋コピー ──
