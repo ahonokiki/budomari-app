@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>枝肉歩留まり計算</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --accent: #1a3a6b;
+    --accent2: #2e5ca8;
+    --light-accent: #e8eef8;
+    --text: #1a1a2e;
+    --muted: #6b7a99;
+    --border: #dde3ef;
+    --input-bg: #f7f9fc;
+    --green: #1a7a4a;
+    --green-bg: #e8f5ee;
+    --red: #c0392b;
+    --shadow: 0 2px 12px rgba(26,58,107,0.10);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 40px;
+  }
+
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 20px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(26,58,107,0.18);
+  }
+
+  header .icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  header .subtitle {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px 0;
+  }
+
+  /* ── 入力カード ── */
+  .input-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .input-card h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .input-card h2::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: var(--accent2);
+    border-radius: 2px;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .input-row:focus-within {
+    border-color: var(--accent2);
+    background: #fff;
+  }
+
+  .input-row input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 12px 14px;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    outline: none;
+    min-width: 0;
+  }
+
+  .input-row input::placeholder { color: #bec8dc; }
+
+  .unit {
+    padding: 0 14px 0 4px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .calc-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 15px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .calc-btn:active { background: #122d58; transform: scale(0.98); }
+
+  /* ── 結果カード ── */
+  .result-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-header {
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .result-table tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-table tr:last-child { border-bottom: none; }
+
+  .result-table td {
+    padding: 13px 18px;
+    font-size: 15px;
+  }
+
+  .result-table td:first-child {
+    font-weight: 700;
+    color: var(--muted);
+    font-size: 13px;
+    width: 44%;
+    white-space: nowrap;
+  }
+
+  .result-table td:last-child {
+    font-weight: 700;
+    color: var(--text);
+    text-align: right;
+    font-size: 17px;
+  }
+
+  .yield-row td:last-child {
+    font-size: 22px !important;
+    font-weight: 900 !important;
+  }
+
+  .yield-good  { color: var(--green) !important; }
+  .yield-warn  { color: #d68000 !important; }
+  .yield-bad   { color: var(--red) !important; }
+
+  .yield-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .badge-good { background: var(--green-bg); color: var(--green); }
+  .badge-warn { background: #fff3e0; color: #d68000; }
+  .badge-bad  { background: #fdecea; color: var(--red); }
+
+  /* 吹き出しメッセージ */
+  .message-box {
+    background: var(--light-accent);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 10px 10px 0;
+    margin: 12px 16px 0;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  .copy-btn {
+    width: calc(100% - 32px);
+    margin: 12px 16px 16px;
+    padding: 12px;
+    background: #fff;
+    border: 1.5px solid var(--accent2);
+    color: var(--accent2);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.18s, color 0.18s;
+  }
+
+  .copy-btn:active { background: var(--light-accent); }
+
+  .copy-btn.copied {
+    background: var(--green-bg);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* 履歴 */
+  .history-section h2 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .history-section h2::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 13px;
+    background: var(--muted);
+    border-radius: 2px;
+  }
+
+  .history-item {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(26,58,107,0.07);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+
+  .history-item:active { box-shadow: 0 2px 10px rgba(26,58,107,0.13); }
+
+  .history-item.pressing {
+    background: #f0f2f5;
+    transform: scale(0.98);
+  }
+
+  .history-item.show-delete .history-yield { display: none; }
+
+  .delete-btn {
+    display: none;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .history-item.show-delete .delete-btn { display: inline-block; }
+  .delete-btn:active { background: #8a2418; }
+
+  .history-left {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .history-left strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .history-yield {
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  .clear-btn {
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+  }
+
+  .empty-history {
+    text-align: center;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ── 種別選択 ── */
+  .type-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .type-btn {
+    flex: 1;
+    padding: 11px 6px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    line-height: 1.3;
+  }
+
+  .type-btn:active { transform: scale(0.96); }
+
+  .type-btn.active {
+    border-color: var(--accent2);
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26,58,107,0.18);
+  }
+
+  /* ── 粗利スライダー ── */
+  .margin-row {
+    display: flex; align-items: center; gap: 12px; margin-top: 4px;
+  }
+  .margin-row input[type=range] {
+    flex: 1; height: 6px; accent-color: var(--accent2); cursor: pointer;
+  }
+  .margin-val {
+    font-size: 22px; font-weight: 900; color: var(--accent2);
+    min-width: 56px; text-align: right;
+  }
+
+  /* 目標販売単価 */
+  .price-target-cell {
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    color: var(--green) !important;
+  }
+
+  #results-area { display: none; }
+
+  /* ── ログイン画面 ── */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--accent);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+  }
+
+  #login-screen h2 {
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  #login-screen p {
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    margin-bottom: 32px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .login-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+
+  .login-field {
+    margin-bottom: 16px;
+  }
+
+  .login-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .login-field input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 17px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text);
+    background: var(--input-bg);
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .login-field input:focus {
+    border-color: var(--accent2);
+    background: #fff;
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .login-btn:active { background: #122d58; }
+
+  .login-field input.error {
+    border-color: var(--red);
+    background: #fff5f5;
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-6px); }
+    40%,80% { transform: translateX(6px); }
+  }
+
+  .shake { animation: shake 0.4s ease; }
+
+  /* ── 枝重キーパッド モーダル ── */
+  .kp-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;flex-direction:column;justify-content:flex-end;}
+  .kp-modal.show{display:flex;}
+  .kp-sheet{background:var(--bg);border-radius:18px 18px 0 0;padding:12px 12px 16px;max-width:480px;margin:0 auto;width:100%;}
+  .kp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .kp-head h3{font-size:14px;font-weight:700;color:var(--accent);}
+  .kp-head .x{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;}
+  .kp-total{background:var(--card);border-radius:12px;padding:9px;text-align:center;box-shadow:var(--shadow);}
+  .kp-total .v{font-size:30px;font-weight:900;color:var(--accent);line-height:1.05;}
+  .kp-total .v small{font-size:14px;color:var(--muted);font-weight:700;}
+  .kp-total .cnt{font-size:11px;color:var(--muted);}
+  .kp-chips{height:96px;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;background:#fbfcfe;border:1px dashed var(--border);border-radius:10px;padding:7px;margin:8px 0;}
+  .kp-chip{background:#e8eef8;color:var(--accent);border-radius:8px;padding:5px 9px;font-size:15px;font-weight:700;height:30px;}
+  .kp-chips:empty::before{content:'枝重がここに並びます（タップで1頭削除）';color:#bcc6d8;font-size:12px;}
+  .kp-buf{background:var(--card);border:2px solid var(--accent2);border-radius:10px;padding:8px 14px;font-size:26px;font-weight:800;text-align:right;min-height:48px;margin-bottom:8px;}
+  .kp-buf .ph{color:#c0cadb;font-size:15px;font-weight:500;}
+  .kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .kp-key{background:var(--card);border:none;border-radius:11px;padding:13px 0;font-size:23px;font-weight:700;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;}
+  .kp-key:active{background:#eef1f7;transform:scale(.97);}
+  .kp-key.del{color:var(--red);}
+  .kp-key.sm{font-size:13px;}
+  .kp-commit{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px;}
+  .kp-cbtn{border:none;border-radius:12px;padding:12px 0;font-size:18px;font-weight:800;color:#fff;cursor:pointer;}
+  .kp-cbtn small{display:block;font-size:10px;font-weight:600;opacity:.9;}
+  .kp-cbtn.h5{background:var(--accent2);}
+  .kp-cbtn.h0{background:var(--green);}
+  .kp-foot{display:flex;gap:7px;margin-top:9px;}
+  .kp-clr{flex:0 0 88px;background:#fff;border:1.5px solid var(--border);color:var(--red);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;}
+  .kp-done{flex:1;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="login-screen">
+  <h2>枝肉歩留まり計算</h2>
+  <p>株式会社若林商店</p>
+  <div class="login-card">
+    <div class="login-field">
+      <label>会社名・氏名</label>
+      <input type="text" id="login-name" placeholder="例：○○商事　山田">
+    </div>
+    <div class="login-field">
+      <label>パスワード</label>
+      <input type="password" id="login-pass" placeholder="パスワードを入力">
+    </div>
+    <button class="login-btn" id="login-btn">ログイン</button>
+    <div style="color:#c0392b;font-size:12px;text-align:center;margin-top:10px;display:none;line-height:1.6;white-space:pre-line;" id="login-error"></div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#aab4c8;line-height:1.7;text-align:center;">
+      本ソフトウェアは株式会社若林商店が開発・提供するサービスです。<br>
+      無断複製・転載・改変・再配布を禁じます。<br>
+      ご利用はサブスクリプション契約者に限ります。
+    </div>
+  </div>
+</div>
+
+<header>
+  <h1>枝肉歩留まり計算</h1>
+  <span class="subtitle">計算ソフトのオーダーメイド、<br>お気軽にご相談ください。<br>株式会社若林商店</span>
+</header>
+
+<div class="container">
+
+  <!-- 種別選択 -->
+  <div class="type-selector">
+    <button class="type-btn active" data-type="set">セット</button>
+    <button class="type-btn" data-type="ham">ハム計量</button>
+    <button class="type-btn" data-type="parts">パーツ計量</button>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="input-card">
+    <h2>入力</h2>
+
+    <div class="field">
+      <label>加工料金</label>
+      <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
+        <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:#aab4c8;">3,500 円/頭（固定）</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>頭数</label>
+      <div class="input-row">
+        <input type="number" id="heads" inputmode="decimal" placeholder="" min="0" step="0.5">
+        <span class="unit">頭</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>枝重</label>
+      <div class="input-row" id="branch-open" style="cursor:pointer;">
+        <input type="number" id="branch" inputmode="decimal" placeholder="タップして枝重を入力" min="0" step="0.1" readonly style="cursor:pointer; background:transparent;">
+        <span class="unit" id="branch-cnt" style="color:var(--accent2);"></span>
+        <span class="unit">kg ▸</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>枝肉加重平均単価</label>
+      <div class="input-row">
+        <input type="number" id="weighted-price" inputmode="decimal" placeholder="" min="0" step="1">
+        <span class="unit">円/kg</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>出来上がり重量</label>
+      <div class="input-row" style="margin-bottom:8px;">
+        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">セット</span>
+        <input type="number" id="output-set" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit">kg</span>
+      </div>
+      <div class="input-row" style="margin-bottom:8px;">
+        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">ハム</span>
+        <input type="number" id="output-ham" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit">kg</span>
+      </div>
+      <div class="input-row">
+        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">パーツ</span>
+        <input type="number" id="output-parts" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit">kg</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>粗利設定</label>
+      <div class="input-row">
+        <input type="number" id="margin-input" inputmode="decimal" placeholder="10" min="0" max="99" step="1">
+        <span class="unit">%</span>
+      </div>
+    </div>
+
+    <button class="calc-btn" id="calc-btn">
+      <span>📊</span> 計算する
+    </button>
+  </div>
+
+  <!-- 結果 -->
+  <div id="results-area">
+    <div class="result-card">
+      <div class="result-header">
+        🗒️ <span id="result-title">計算結果</span>
+      </div>
+      <table class="result-table">
+        <tr>
+          <td>頭数</td>
+          <td id="r-heads">—</td>
+        </tr>
+        <tr>
+          <td>加工料金</td>
+          <td id="r-processing-fee">—</td>
+        </tr>
+        <tr>
+          <td>枝重</td>
+          <td id="r-branch">—</td>
+        </tr>
+        <tr id="r-weighted-row" style="display:none">
+          <td>加重平均単価</td>
+          <td id="r-weighted">—</td>
+        </tr>
+        <tr>
+          <td>出来上がり</td>
+          <td id="r-output">—</td>
+        </tr>
+        <tr class="yield-row">
+          <td>歩留</td>
+          <td id="r-yield">—</td>
+        </tr>
+        <tr id="r-unit-cost-row" style="display:none">
+          <td>計量後原価単価</td>
+          <td id="r-unit-cost">—</td>
+        </tr>
+        <tr id="r-processing-row" style="display:none">
+          <td>加工込み原価単価</td>
+          <td id="r-processing">—</td>
+        </tr>
+        <tr id="r-target-row" style="display:none">
+          <td>目標販売単価</td>
+          <td id="r-target" class="price-target-cell">—</td>
+        </tr>
+      </table>
+      <div class="message-box" id="msg-box"></div>
+      <button class="copy-btn" id="copy-btn">
+        <span>📋</span> テキストをコピー
+      </button>
+    </div>
+  </div>
+
+  <!-- 履歴 -->
+  <div class="history-section" id="history-section">
+    <h2>計算履歴</h2>
+    <div id="history-list">
+      <div class="empty-history">履歴はまだありません</div>
+    </div>
+    <button class="clear-btn" id="clear-btn" style="display:none">🗑 履歴をクリア</button>
+  </div>
+
+  <!-- フッター -->
+  <div style="text-align:center;padding:24px 16px 8px;font-size:11px;color:#aab4c8;line-height:1.8;">
+    本ソフトウェアは株式会社若林商店が開発・提供するサービスです。<br>
+    無断複製・転載・改変・再配布を禁じます。<br>
+    ご利用はサブスクリプション契約者に限ります。<br>
+    © 2025 株式会社若林商店 All Rights Reserved.
+  </div>
+
+  <div style="text-align:center;padding:0 16px 24px;">
+    <a href="#" id="settings-link" style="font-size:11px;color:#aab4c8;text-decoration:underline;">⚙ 記録先スプレッドシート設定</a>
+  </div>
+
+</div>
+<!-- 枝重キーパッド モーダル -->
+<div class="kp-modal" id="kp-modal">
+  <div class="kp-sheet">
+    <div class="kp-head">
+      <h3>⚖️ 枝重を入力（.5は左／.0は右✓）</h3>
+      <button class="x" id="kp-x">✕</button>
+    </div>
+    <div class="kp-total"><div class="v" id="kp-total">0.0<small> kg</small></div><div class="cnt" id="kp-cnt">0 頭</div></div>
+    <div class="kp-chips" id="kp-chips"></div>
+    <div class="kp-buf" id="kp-buf"><span class="ph">数字を入力…</span></div>
+    <div class="kp-grid">
+      <button class="kp-key" data-d="7">7</button><button class="kp-key" data-d="8">8</button><button class="kp-key" data-d="9">9</button>
+      <button class="kp-key" data-d="4">4</button><button class="kp-key" data-d="5">5</button><button class="kp-key" data-d="6">6</button>
+      <button class="kp-key" data-d="1">1</button><button class="kp-key" data-d="2">2</button><button class="kp-key" data-d="3">3</button>
+      <button class="kp-key del" id="kp-del">⌫</button><button class="kp-key" data-d="0">0</button><button class="kp-key del sm" id="kp-delItem">頭↩︎削除</button>
+    </div>
+    <div class="kp-commit">
+      <button class="kp-cbtn h5" id="kp-c5">.（.5）<small>5は不要・次へ</small></button>
+      <button class="kp-cbtn h0" id="kp-c0">✓（.0）<small>そのまま・次へ</small></button>
+    </div>
+    <div class="kp-foot">
+      <button class="kp-clr" id="kp-clear">全クリア</button>
+      <button class="kp-done" id="kp-done">この枝重で確定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+let history = JSON.parse(localStorage.getItem('budomari_history') || '[]');
+let currentType = 'set';
+let marginRate = parseFloat(localStorage.getItem('budomari_margin') || '10');
+
+// 粗利入力初期化
+document.getElementById('margin-input').value = marginRate;
+document.getElementById('margin-input').addEventListener('input', function() {
+  const val = parseFloat(this.value);
+  if (!isNaN(val) && val >= 0 && val < 100) {
+    marginRate = val;
+    localStorage.setItem('budomari_margin', marginRate);
+  }
+});
+
+// ── 枝重キーパッド（複数の枝肉重量を入力→自動合計） ──
+let branchItems = JSON.parse(localStorage.getItem('budomari_branchItems') || '[]');
+(function(){
+  let buf = '';
+  const modal = document.getElementById('kp-modal');
+  const bufEl = document.getElementById('kp-buf'), totalEl = document.getElementById('kp-total'),
+        cntEl = document.getElementById('kp-cnt'), chipsEl = document.getElementById('kp-chips');
+  function sum(){ let s = 0; for (let i = 0; i < branchItems.length; i++) s += branchItems[i]; return s; }
+  function render(){
+    bufEl.innerHTML = buf === '' ? '<span class="ph">数字を入力…</span>' : buf;
+    totalEl.innerHTML = sum().toFixed(1) + '<small> kg</small>';
+    cntEl.textContent = branchItems.length + ' 頭';
+    chipsEl.innerHTML = branchItems.map((v, i) => `<span class="kp-chip" data-i="${i}">${v.toFixed(1)}</span>`).join('');
+    chipsEl.scrollTop = chipsEl.scrollHeight;
+  }
+  function commit(frac){
+    if (buf === '') return;
+    const n = parseInt(buf, 10);
+    if (!isNaN(n)) branchItems.push(n + frac);
+    buf = ''; render();
+    if (navigator.vibrate) navigator.vibrate(12);
+  }
+  function applyToField(){
+    const s = sum();
+    document.getElementById('branch').value = s > 0 ? s.toFixed(1) : '';
+    document.getElementById('branch-cnt').textContent = branchItems.length > 0 ? branchItems.length + '頭' : '';
+    localStorage.setItem('budomari_branchItems', JSON.stringify(branchItems));
+  }
+  // 履歴復元・外部から呼ぶ用
+  window.__setBranchItems = function(arr){ branchItems = Array.isArray(arr) ? arr.slice() : []; applyToField(); };
+  window.__applyBranch = applyToField;
+
+  document.getElementById('branch-open').addEventListener('click', function(){ buf = ''; render(); modal.classList.add('show'); });
+  document.getElementById('kp-x').addEventListener('click', function(){ modal.classList.remove('show'); });
+  modal.addEventListener('click', function(e){ if (e.target === modal) modal.classList.remove('show'); });
+  document.querySelectorAll('.kp-key[data-d]').forEach(function(k){
+    k.addEventListener('click', function(){ if (buf.length < 3) buf += this.getAttribute('data-d'); render(); });
+  });
+  document.getElementById('kp-del').addEventListener('click', function(){ buf = buf.slice(0, -1); render(); });
+  document.getElementById('kp-delItem').addEventListener('click', function(){ if (buf !== '') { buf = ''; } else { branchItems.pop(); } render(); });
+  document.getElementById('kp-c5').addEventListener('click', function(){ commit(0.5); });
+  document.getElementById('kp-c0').addEventListener('click', function(){ commit(0.0); });
+  document.getElementById('kp-clear').addEventListener('click', function(){ branchItems = []; buf = ''; render(); });
+  document.getElementById('kp-done').addEventListener('click', function(){ applyToField(); modal.classList.remove('show'); });
+  chipsEl.addEventListener('click', function(e){
+    const c = e.target.closest('.kp-chip');
+    if (c) { branchItems.splice(parseInt(c.getAttribute('data-i'), 10), 1); render(); }
+  });
+  applyToField();   // 起動時に保存済み枝重を反映
+})();
+
+// ── ログイン処理 ──
+const PASSWORD = '2317';
+const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
+
+// ── スプレッドシート記録（GAS Webhook・追記専用） ──
+// GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec';
+function loadWebhook() { return WEBHOOK_URL || localStorage.getItem('budomari_webhook') || ''; }
+function postToSheet(entry) {
+  const url = loadWebhook();
+  if (!url) return; // 未設定なら端末内の履歴のみ
+  try {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ type: 'add_record', record: entry })
+    }).catch(function() {});
+  } catch (e) {}
+}
+
+// 今月のキー（例：2026-04）
+function thisMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// 同月ログイン済みならスキップ
+const savedMonth = localStorage.getItem('login_month');
+if (savedMonth === thisMonth()) {
+  document.getElementById('login-screen').style.display = 'none';
+}
+
+function showError(msg, fieldId) {
+  const err = document.getElementById('login-error');
+  err.textContent = msg;
+  err.style.display = 'block';
+  if (fieldId) {
+    const inp = document.getElementById(fieldId);
+    inp.classList.add('error', 'shake');
+    inp.addEventListener('animationend', function() { inp.classList.remove('shake'); }, { once: true });
+    inp.focus();
+  }
+}
+
+function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const pass = document.getElementById('login-pass').value;
+
+  // エラーリセット
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-name').classList.remove('error');
+  document.getElementById('login-pass').classList.remove('error');
+
+  if (!name) {
+    showError('会社名・氏名を入力してください', 'login-name');
+    return;
+  }
+  if (pass !== PASSWORD) {
+    showError('パスワードが正しくありません\n株式会社若林商店 若林賢までご連絡よろしくお願いいたします', 'login-pass');
+    document.getElementById('login-pass').value = '';
+    return;
+  }
+
+  // 今月ログイン済みとして保存
+  localStorage.setItem('login_month', thisMonth());
+
+  // ログイン画面を閉じる
+  document.getElementById('login-screen').style.display = 'none';
+
+  // Googleフォームを別タブで開く（ポップアップブロック対策で遅延）
+  setTimeout(function() {
+    window.open(FORM_URL, '_blank');
+  }, 300);
+}
+
+document.getElementById('login-btn').addEventListener('click', doLogin);
+document.getElementById('login-pass').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-name').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('login-pass').focus();
+});
+
+renderHistory();
+
+// 種別ボタン
+document.querySelectorAll('.type-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    currentType = this.getAttribute('data-type');
+    document.querySelectorAll('.type-btn').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+  });
+});
+
+function getLabel(type, heads) {
+  if (type === 'set')   return `チルド半丸セット${heads}頭`;
+  if (type === 'ham')   return `ハム計量${heads}頭`;
+  if (type === 'parts') return `パーツ計量${heads}頭`;
+  return `${heads}頭`;
+}
+
+function calculate() {
+  const heads  = parseFloat(document.getElementById('heads').value);
+  const branch = parseFloat(document.getElementById('branch').value);
+  const oSet   = parseFloat(document.getElementById('output-set').value)   || 0;
+  const oHam   = parseFloat(document.getElementById('output-ham').value)   || 0;
+  const oParts = parseFloat(document.getElementById('output-parts').value) || 0;
+  const output = oSet + oHam + oParts;
+  const wPrice = parseFloat(document.getElementById('weighted-price').value);
+
+  if (isNaN(heads) || isNaN(branch) || output <= 0 || branch <= 0) {
+    return;
+  }
+
+  // 出来上がりの内訳（入力があるものだけ）
+  const outParts = [];
+  if (oSet   > 0) outParts.push(`セット${oSet.toFixed(1)}k`);
+  if (oHam   > 0) outParts.push(`ハム${oHam.toFixed(1)}k`);
+  if (oParts > 0) outParts.push(`パーツ${oParts.toFixed(1)}k`);
+  const breakdown = outParts.join('　');
+
+  const yield_ = (output / branch * 100);
+  const yieldStr = yield_.toFixed(1);
+
+  const label = getLabel(currentType, heads);
+
+  // 歩留評価
+  let cls = 'yield-warn', badge = '普通', badgeCls = 'badge-warn';
+  if (yield_ >= 73)      { cls = 'yield-good'; badge = '優良'; badgeCls = 'badge-good'; }
+  else if (yield_ < 70)  { cls = 'yield-bad';  badge = '要確認'; badgeCls = 'badge-bad'; }
+
+  // UI更新
+  document.getElementById('result-title').textContent = label;
+  document.getElementById('r-heads').textContent  = `${heads} 頭`;
+  document.getElementById('r-processing-fee').textContent = `${(heads * 3500).toLocaleString()} 円（3,500円/頭）`;
+  document.getElementById('r-branch').textContent = `${branch.toFixed(1)} kg`;
+  document.getElementById('r-output').textContent = outParts.length > 1
+    ? `${output.toFixed(1)} kg（${breakdown}）`
+    : `${output.toFixed(1)} kg`;
+
+  const yieldCell = document.getElementById('r-yield');
+  yieldCell.innerHTML = `<span class="${cls}">${yieldStr}%</span><span class="yield-badge ${badgeCls}">${badge}</span>`;
+
+  // 加重平均・計量後原価・加工後原価単価
+  if (!isNaN(wPrice) && wPrice > 0) {
+    const unitCost = Math.round(branch * wPrice / output);
+    const processingCost = Math.round((branch * wPrice + heads * 3500) / output);
+    const targetPrice = Math.round(processingCost / (1 - marginRate / 100));
+    document.getElementById('r-unit-cost').textContent = unitCost.toLocaleString() + ' 円/kg';
+    document.getElementById('r-weighted').textContent = wPrice.toLocaleString() + ' 円/kg';
+    document.getElementById('r-processing').textContent = processingCost.toLocaleString() + ' 円/kg';
+    document.getElementById('r-target').textContent = targetPrice.toLocaleString() + ' 円/kg';
+    document.getElementById('r-unit-cost-row').style.display = '';
+    document.getElementById('r-weighted-row').style.display = '';
+    document.getElementById('r-processing-row').style.display = '';
+    document.getElementById('r-target-row').style.display = '';
+  } else {
+    document.getElementById('r-unit-cost-row').style.display = 'none';
+    document.getElementById('r-weighted-row').style.display = 'none';
+    document.getElementById('r-processing-row').style.display = 'none';
+    document.getElementById('r-target-row').style.display = 'none';
+  }
+
+  // メッセージ生成
+  let msg = `${label}\n枝重\u3000\u3000\u3000${branch.toFixed(1)}k\n出来上がり${output.toFixed(1)}k${outParts.length>1?'（'+breakdown+'）':''}\n歩留\u3000\u3000\u3000${yieldStr}%`;
+  if (!isNaN(wPrice) && wPrice > 0) {
+    const unitCost = Math.round(branch * wPrice / output);
+    const processingCost = Math.round((branch * wPrice + heads * 3500) / output);
+    const targetPrice = Math.round(processingCost / (1 - marginRate / 100));
+    msg += `\n加重平均単価　${wPrice.toLocaleString()}円/kg\n計量後原価単価　${unitCost.toLocaleString()}円/kg\n加工込み原価単価　${processingCost.toLocaleString()}円/kg\n目標販売単価(粗利${marginRate}%)　${targetPrice.toLocaleString()}円/kg`;
+  }
+  msg += '\nご確認よろしくお願いいたします。';
+  document.getElementById('msg-box').textContent = msg;
+
+  document.getElementById('results-area').style.display = 'block';
+  document.getElementById('copy-btn').classList.remove('copied');
+  document.getElementById('copy-btn').innerHTML = '<span>📋</span> テキストをコピー';
+
+  // スクロール
+  setTimeout(() => {
+    document.getElementById('results-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+
+  // 履歴保存
+  const unitCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(branch * wPrice / output) : null;
+  const processingCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round((branch * wPrice + heads * 3500) / output) : null;
+  const targetPriceSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(processingCostSave / (1 - marginRate / 100)) : null;
+  const entry = { heads, branch, branchItems: branchItems.slice(), output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
+  history.unshift(entry);
+  if (history.length > 20) history = history.slice(0, 20);
+  localStorage.setItem('budomari_history', JSON.stringify(history));
+  renderHistory();
+
+  // スプレッドシートにも記録（追記専用・台帳兼バックアップ）
+  postToSheet(entry);
+}
+
+function copyMessage() {
+  const msg = document.getElementById('msg-box').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).then(() => setCopied());
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = msg;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    setCopied();
+  }
+}
+
+function setCopied() {
+  const btn = document.getElementById('copy-btn');
+  btn.classList.add('copied');
+  btn.innerHTML = '<span>✅</span> コピーしました！';
+  setTimeout(() => {
+    btn.classList.remove('copied');
+    btn.innerHTML = '<span>📋</span> テキストをコピー';
+  }, 2000);
+}
+
+function yieldColor(y) {
+  if (y >= 73) return '#1a7a4a';
+  if (y >= 70) return '#d68000';
+  return '#c0392b';
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const clearBtn = document.getElementById('clear-btn');
+  if (history.length === 0) {
+    list.innerHTML = '<div class="empty-history">履歴はまだありません</div>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  clearBtn.style.display = 'block';
+  list.innerHTML = history.map((e, i) => {
+    const d = new Date(e.ts);
+    const ds = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const col = yieldColor(parseFloat(e.yield_));
+    const targetInfo = e.targetPrice
+      ? `<br><span style="color:#1a7a4a;font-weight:700;">目標販売単価(粗利${e.margin ?? 10}%) ${e.targetPrice.toLocaleString()}円/kg</span>`
+      : '';
+    const extraInfo = e.wPrice
+      ? `<br>加重平均 ${e.wPrice.toLocaleString()}円/kg　原価単価 ${e.unitCost ? e.unitCost.toLocaleString() : '—'}円/kg　加工込 ${e.processingCost ? e.processingCost.toLocaleString() : '—'}円/kg${targetInfo}`
+      : '';
+    return `<div class="history-item" data-index="${i}">
+      <div class="history-left">
+        <strong>${e.label}</strong>
+        枝重 ${e.branch.toFixed(1)}k → ${e.output.toFixed(1)}k${extraInfo}
+        <br><span style="font-size:11px;">${ds}</span>
+      </div>
+      <div class="history-yield" style="color:${col}">${e.yield_}%</div>
+      <button class="delete-btn" data-del="${i}">🗑 削除</button>
+    </div>`;
+  }).join('');
+  attachHistoryHandlers();
+}
+
+function attachHistoryHandlers() {
+  document.querySelectorAll('.history-item').forEach(function(item) {
+    let pressTimer = null;
+    let longPressed = false;
+    const idx = parseInt(item.getAttribute('data-index'), 10);
+
+    const start = function(ev) {
+      if (ev.target.classList.contains('delete-btn')) return;
+      longPressed = false;
+      item.classList.add('pressing');
+      pressTimer = setTimeout(function() {
+        longPressed = true;
+        item.classList.remove('pressing');
+        // 他の項目の削除ボタンを閉じる
+        document.querySelectorAll('.history-item.show-delete').forEach(function(el) {
+          if (el !== item) el.classList.remove('show-delete');
+        });
+        item.classList.toggle('show-delete');
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, 500);
+    };
+    const cancel = function() {
+      clearTimeout(pressTimer);
+      item.classList.remove('pressing');
+    };
+    item.addEventListener('mousedown', start);
+    item.addEventListener('touchstart', start, { passive: true });
+    item.addEventListener('mouseup', cancel);
+    item.addEventListener('mouseleave', cancel);
+    item.addEventListener('touchend', cancel);
+    item.addEventListener('touchcancel', cancel);
+    item.addEventListener('touchmove', cancel);
+
+    item.addEventListener('click', function(ev) {
+      if (ev.target.classList.contains('delete-btn')) {
+        ev.stopPropagation();
+        deleteHistory(parseInt(ev.target.getAttribute('data-del'), 10));
+        return;
+      }
+      if (longPressed) { longPressed = false; return; }
+      if (item.classList.contains('show-delete')) {
+        item.classList.remove('show-delete');
+        return;
+      }
+      loadHistory(idx);
+    });
+  });
+}
+
+function deleteHistory(i) {
+  history.splice(i, 1);
+  localStorage.setItem('budomari_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function loadHistory(i) {
+  const e = history[i];
+  document.getElementById('heads').value  = e.heads;
+  if (e.branchItems && e.branchItems.length) {
+    window.__setBranchItems(e.branchItems);     // 内訳ごと復元
+  } else {
+    window.__setBranchItems([]);                // 旧データは合計のみ
+    document.getElementById('branch').value = e.branch;
+    document.getElementById('branch-cnt').textContent = '';
+  }
+  // 旧データ（内訳なし）はセット欄に合計を入れる
+  document.getElementById('output-set').value   = (e.oSet != null) ? (e.oSet || '') : (e.output || '');
+  document.getElementById('output-ham').value   = (e.oHam != null && e.oHam) ? e.oHam : '';
+  document.getElementById('output-parts').value = (e.oParts != null && e.oParts) ? e.oParts : '';
+  document.getElementById('weighted-price').value = e.wPrice || '';
+  // 種別を復元
+  const t = e.type || 'set';
+  currentType = t;
+  document.querySelectorAll('.type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-type') === t);
+  });
+  // 結果は閉じて、入力欄にスクロール（訂正しやすいように）
+  document.getElementById('results-area').style.display = 'none';
+  document.querySelector('.input-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // 訂正しやすいよう、最初の入力欄にフォーカス
+  setTimeout(function() {
+    document.getElementById('heads').focus();
+  }, 300);
+}
+
+function clearHistory() {
+  const linked = !!loadWebhook();
+  const recoverNote = linked
+    ? '\n\n💾 この端末の表示が消えるだけで、スプレッドシートには記録が残っています。あとで確認・復旧できます。'
+    : '\n\n⚠️ スプレッドシート連携が未設定のため、消すと元に戻せません。';
+  if (!confirm('⚠️ 計算履歴をすべて削除します。\n本当によろしいですか？' + recoverNote)) return;
+  if (!confirm('⚠️ 最終確認です。\nこの操作は取り消せません。\n\nすべての履歴を削除しますか？')) return;
+  history = [];
+  localStorage.setItem('budomari_history', '[]');
+  renderHistory();
+}
+
+// ── ボタン イベントリスナー ──
+document.getElementById('calc-btn').addEventListener('click', calculate);
+document.getElementById('copy-btn').addEventListener('click', copyMessage);
+document.getElementById('clear-btn').addEventListener('click', clearHistory);
+
+// 記録先スプレッドシート（表示のみ・編集不可）
+document.getElementById('settings-link').addEventListener('click', function(e) {
+  e.preventDefault();
+  const on = !!loadWebhook();
+  alert(
+    '記録先スプレッドシート\n\n' +
+    (on
+      ? '状態：オン（計算するたびに自動でスプレッドシートに記録されます）\n\n※記録先は固定設定のため、ここでは変更できません。'
+      : '状態：オフ（端末内のみ）')
+  );
+});
+
+// Enterキーで計算
+document.querySelectorAll('input').forEach(inp => {
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+});
+
+}); // DOMContentLoaded
+</script>
+</body>
+</html>
