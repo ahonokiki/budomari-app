@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>枝重 すばやく入力（テスト）</title>
+<style>
+  :root{--bg:#f0f2f5;--card:#fff;--accent:#1a3a6b;--accent2:#2e5ca8;--text:#1a1a2e;--muted:#6b7a99;--border:#dde3ef;--green:#1a7a4a;--red:#c0392b;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+  body{font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--accent);color:#fff;padding:14px 18px;}
+  header h1{font-size:16px;font-weight:700;}
+  .wrap{max-width:480px;margin:0 auto;padding:14px;}
+  .total{background:var(--card);border-radius:16px;padding:16px;text-align:center;box-shadow:0 2px 10px rgba(26,58,107,.08);margin-bottom:12px;}
+  .total .v{font-size:36px;font-weight:900;color:var(--accent);line-height:1.1;}
+  .total .v small{font-size:16px;color:var(--muted);font-weight:700;}
+  .total .cnt{font-size:12px;color:var(--muted);margin-top:2px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:6px;}
+  .chip{background:#e8eef8;color:var(--accent);border-radius:8px;padding:6px 10px;font-size:15px;font-weight:700;}
+  .buffer{background:var(--card);border:2px solid var(--accent2);border-radius:12px;padding:14px 16px;font-size:30px;font-weight:800;text-align:right;min-height:60px;margin-bottom:10px;}
+  .buffer .ph{color:#c0cadb;font-size:16px;font-weight:500;}
+  .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .key{background:var(--card);border:none;border-radius:12px;padding:20px 0;font-size:24px;font-weight:700;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;}
+  .key:active{background:#eef1f7;transform:scale(.97);}
+  .key.del{color:var(--red);}
+  .key.small{font-size:14px;}
+  .commit{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .cbtn{border:none;border-radius:14px;padding:16px 0;font-size:20px;font-weight:800;color:#fff;cursor:pointer;}
+  .cbtn.h5{background:var(--accent2);}
+  .cbtn.h0{background:var(--green);}
+  .cbtn:active{transform:scale(.98);filter:brightness(.95);}
+  .cbtn small{display:block;font-size:11px;font-weight:600;opacity:.9;}
+  .hint{font-size:11px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.7;}
+  .clr{width:100%;margin-top:10px;padding:10px;background:transparent;border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+<header><h1>⚖️ 枝重 すばやく入力（テスト）</h1></header>
+<div class="wrap">
+  <div class="total"><div class="v" id="total">0.0<small> kg</small></div><div class="cnt" id="cnt">0 頭</div></div>
+  <div class="chips" id="chips"></div>
+  <div class="buffer" id="buffer"><span class="ph">数字を入力…</span></div>
+  <div class="kp">
+    <button class="key" data-d="7">7</button><button class="key" data-d="8">8</button><button class="key" data-d="9">9</button>
+    <button class="key" data-d="4">4</button><button class="key" data-d="5">5</button><button class="key" data-d="6">6</button>
+    <button class="key" data-d="1">1</button><button class="key" data-d="2">2</button><button class="key" data-d="3">3</button>
+    <button class="key del" id="del">⌫</button><button class="key" data-d="0">0</button><button class="key del small" id="delItem">頭↩︎削除</button>
+  </div>
+  <div class="commit">
+    <button class="cbtn h5" id="c5">.（.5）<small>5は不要・押すと次へ</small></button>
+    <button class="cbtn h0" id="c0">✓（.0）<small>そのまま・押すと次へ</small></button>
+  </div>
+  <button class="clr" id="clr">🗑 全部クリア</button>
+  <div class="hint">
+    数字を打って → <b>.5なら左「.」</b>／<b>.0なら右「✓」</b>。<br>
+    例：82.5 →「8」「2」→ 左。　83.0 →「8」「3」→ 右✓。<br>
+    枝重チップをタップで1頭削除。
+  </div>
+</div>
+<script>
+  var buf='', items=[];
+  var bufEl=document.getElementById('buffer'), totalEl=document.getElementById('total'),
+      cntEl=document.getElementById('cnt'), chipsEl=document.getElementById('chips');
+
+  function render(){
+    bufEl.innerHTML = (buf==='') ? '<span class="ph">数字を入力…</span>' : buf;
+    var sum=0; for(var i=0;i<items.length;i++) sum+=items[i];
+    totalEl.innerHTML = sum.toFixed(1)+'<small> kg</small>';
+    cntEl.textContent = items.length+' 頭';
+    chipsEl.innerHTML = items.map(function(v,i){return '<span class="chip" data-i="'+i+'">'+v.toFixed(1)+'</span>';}).join('');
+  }
+  function commit(frac){
+    if(buf==='') return;
+    var n=parseInt(buf,10);
+    if(!isNaN(n)) items.push(n+frac);
+    buf=''; render();
+    if(navigator.vibrate) navigator.vibrate(12);
+  }
+  document.querySelectorAll('.key[data-d]').forEach(function(k){
+    k.addEventListener('click', function(){ if(buf.length<3) buf+=this.getAttribute('data-d'); render(); });
+  });
+  document.getElementById('del').addEventListener('click', function(){ buf=buf.slice(0,-1); render(); });
+  document.getElementById('delItem').addEventListener('click', function(){ if(buf!==''){buf='';} else {items.pop();} render(); });
+  document.getElementById('c5').addEventListener('click', function(){ commit(0.5); });
+  document.getElementById('c0').addEventListener('click', function(){ commit(0.0); });
+  document.getElementById('clr').addEventListener('click', function(){ items=[]; buf=''; render(); });
+  chipsEl.addEventListener('click', function(e){
+    var c=e.target.closest('.chip'); if(c){ items.splice(parseInt(c.getAttribute('data-i'),10),1); render(); }
+  });
+  render();
+</script>
+</body>
+</html>
