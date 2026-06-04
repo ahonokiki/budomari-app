@@ -797,6 +797,7 @@
       <div class="empty-history">履歴はまだありません</div>
     </div>
     <button class="clear-btn" id="clear-btn" style="display:none">🗑 履歴をクリア</button>
+    <button class="clear-btn" id="restore-btn" style="display:none;background:#eef4ff;color:var(--accent2);border:1px solid #cfe0ff;">📜 直近100件を再表示</button>
   </div>
 
   <!-- フッター -->
@@ -805,10 +806,6 @@
     無断複製・転載・改変・再配布を禁じます。<br>
     ご利用はサブスクリプション契約者に限ります。<br>
     © 2025 株式会社若林商店 All Rights Reserved.
-  </div>
-
-  <div style="text-align:center;padding:0 16px 24px;">
-    <a href="#" id="settings-link" style="font-size:11px;color:#aab4c8;text-decoration:underline;">⚙ 記録先スプレッドシート設定</a>
   </div>
 
 </div>
@@ -834,6 +831,12 @@
       <div id="set-items"></div>
       <button id="set-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 品目を追加</button>
       <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「品目を編集」で<b>名称・単位の変更</b>、<b>↑↓で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。火・木の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
+    </div>
+
+    <div class="field">
+      <label>記録先スプレッドシート（Webhook URL）</label>
+      <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/.../exec" style="width:100%;">
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">GASをデプロイして出た<b>ウェブアプリURL</b>を貼ると、計算するたび<b>自動で台帳（スプレッドシート）に記録</b>されます。<b>空欄＝この端末内のみ</b>。</div>
     </div>
 
     <!-- 2段階確認 -->
@@ -878,6 +881,8 @@
 document.addEventListener('DOMContentLoaded', function() {
 
 let history = JSON.parse(localStorage.getItem('budomari_history') || '[]');
+// 表示用とは別に、直近100件のアーカイブ（履歴クリアでは消さない＝再表示用）
+let historyAll = JSON.parse(localStorage.getItem('budomari_history_all') || '[]');
 let currentType = 'set';
 let marginRate = parseFloat(localStorage.getItem('budomari_margin') || '10');
 
@@ -1084,7 +1089,7 @@ function renderSettings(){
     }).join('');
   }
 }
-function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
+function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-webhook').value = localStorage.getItem('budomari_webhook') || ''; document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
 function closeSettings(){ document.getElementById('set-modal').classList.remove('show'); }
 document.getElementById('settings-btn').addEventListener('click', openSettings);
 document.getElementById('set-x').addEventListener('click', closeSettings);
@@ -1115,6 +1120,10 @@ document.getElementById('set-confirm-yes').addEventListener('click', function(){
     .filter(function(it){ return it.name !== ''; });
   APPCFG = { fee: fee, items: items };
   saveConfig();
+  // 記録先スプレッドシート（Webhook URL）を保存
+  const wh = document.getElementById('set-webhook').value.trim();
+  if (wh) localStorage.setItem('budomari_webhook', wh);
+  else localStorage.removeItem('budomari_webhook');
   setEditing = false; editItems = null;
   renderByproductInputs();
   attachDraftListeners();
@@ -1333,7 +1342,7 @@ function calculate() {
     document.getElementById('r-unit-cost').textContent = unitCost.toLocaleString() + ' 円/kg';
     document.getElementById('r-weighted').textContent = wPrice.toLocaleString() + ' 円/kg';
     document.getElementById('r-processing').textContent = processingCost.toLocaleString() + ' 円/kg';
-    document.getElementById('r-target').textContent = targetPrice.toLocaleString() + ' 円/kg';
+    document.getElementById('r-target').innerHTML = '<span style="color:var(--muted);font-weight:700;font-size:.85em;">粗利' + marginRate + '%</span>　' + targetPrice.toLocaleString() + ' 円/kg';
     document.getElementById('r-unit-cost-row').style.display = '';
     document.getElementById('r-weighted-row').style.display = '';
     document.getElementById('r-processing-row').style.display = '';
@@ -1369,7 +1378,7 @@ function calculate() {
         if (!isNaN(wPrice) && wPrice > 0) {
           const pc = (bw * wPrice + hn * FEE()) / ow;       // この種類の加工込み原価単価
           const t = Math.round(pc / (1 - marginRate / 100)); // 目標販売単価
-          tgt = '<span style="color:var(--green);font-weight:800;">目標 ' + t.toLocaleString() + '円/kg</span>　';
+          tgt = '<span style="color:var(--muted);font-weight:700;">粗利' + marginRate + '%</span> <span style="color:var(--green);font-weight:800;">目標 ' + t.toLocaleString() + '円/kg</span>　';
         }
         document.getElementById(m[3]).innerHTML = tgt + y;
         document.getElementById(m[2]).style.display = '';
@@ -1396,6 +1405,10 @@ function calculate() {
   history.unshift(entry);
   if (history.length > 20) history = history.slice(0, 20);
   localStorage.setItem('budomari_history', JSON.stringify(history));
+  // アーカイブ（直近100件・履歴クリアでは消えない）
+  historyAll.unshift(entry);
+  if (historyAll.length > 100) historyAll = historyAll.slice(0, 100);
+  localStorage.setItem('budomari_history_all', JSON.stringify(historyAll));
   renderHistory();
 
   // スプレッドシートにも記録（追記専用・台帳兼バックアップ）
@@ -1436,6 +1449,9 @@ function yieldColor(y) {
 function renderHistory() {
   const list = document.getElementById('history-list');
   const clearBtn = document.getElementById('clear-btn');
+  const restoreBtn = document.getElementById('restore-btn');
+  // 表示中より多くアーカイブがあるとき「再表示」を出す
+  restoreBtn.style.display = (historyAll.length > history.length) ? 'block' : 'none';
   if (history.length === 0) {
     list.innerHTML = '<div class="empty-history">履歴はまだありません</div>';
     clearBtn.style.display = 'none';
@@ -1568,17 +1584,10 @@ function clearHistory() {
 document.getElementById('calc-btn').addEventListener('click', calculate);
 document.getElementById('copy-btn').addEventListener('click', copyMessage);
 document.getElementById('clear-btn').addEventListener('click', clearHistory);
-
-// 記録先スプレッドシート（表示のみ・編集不可）
-document.getElementById('settings-link').addEventListener('click', function(e) {
-  e.preventDefault();
-  const on = !!loadWebhook();
-  alert(
-    '記録先スプレッドシート\n\n' +
-    (on
-      ? '状態：オン（計算するたびに自動でスプレッドシートに記録されます）\n\n※記録先は固定設定のため、ここでは変更できません。'
-      : '状態：オフ（端末内のみ）')
-  );
+document.getElementById('restore-btn').addEventListener('click', function() {
+  history = historyAll.slice(0, 100);
+  localStorage.setItem('budomari_history', JSON.stringify(history));
+  renderHistory();
 });
 
 // Enterキーで計算
