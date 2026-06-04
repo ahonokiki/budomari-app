@@ -620,12 +620,6 @@
 
 <div class="container">
 
-  <!-- 種別選択 -->
-  <div class="type-selector">
-    <button class="type-btn active" data-type="set">セット</button>
-    <button class="type-btn" data-type="ham">ハム計量</button>
-    <button class="type-btn" data-type="parts">パーツ計量</button>
-  </div>
 
   <!-- 入力フォーム -->
   <div class="input-card">
@@ -1362,14 +1356,22 @@ function calculate() {
   msg += '\nご確認よろしくお願いいたします。';
   document.getElementById('msg-box').textContent = msg;
 
-  // 種類別の歩留（薄緑）＝各出来上がり ÷ 各枝重
+  // 種類別の歩留（薄緑）＝各出来上がり ÷ 各枝重。左横に種類別の目標販売単価（簡易版）
   (function(){
     const map = [['set','output-set','r-yset-row','r-yset'],['ham','output-ham','r-yham-row','r-yham'],['parts','output-parts','r-yparts-row','r-yparts']];
     map.forEach(function(m){
       const ow = parseFloat(document.getElementById(m[1]).value);
       const bw = window.__lotSum(m[0]);
+      const hn = window.__lotHeads(m[0]);
       if (!isNaN(ow) && ow > 0 && bw > 0){
-        document.getElementById(m[3]).textContent = (ow / bw * 100).toFixed(1) + '%';
+        const y = (ow / bw * 100).toFixed(1) + '%';
+        let tgt = '';
+        if (!isNaN(wPrice) && wPrice > 0) {
+          const pc = (bw * wPrice + hn * FEE()) / ow;       // この種類の加工込み原価単価
+          const t = Math.round(pc / (1 - marginRate / 100)); // 目標販売単価
+          tgt = '<span style="color:var(--green);font-weight:800;">目標 ' + t.toLocaleString() + '円/kg</span>　';
+        }
+        document.getElementById(m[3]).innerHTML = tgt + y;
         document.getElementById(m[2]).style.display = '';
       } else {
         document.getElementById(m[2]).style.display = 'none';
