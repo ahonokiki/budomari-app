@@ -1585,7 +1585,11 @@ document.getElementById('calc-btn').addEventListener('click', calculate);
 document.getElementById('copy-btn').addEventListener('click', copyMessage);
 document.getElementById('clear-btn').addEventListener('click', clearHistory);
 document.getElementById('restore-btn').addEventListener('click', function() {
-  history = historyAll.slice(0, 100);
+  // 直近100件のうち、歩留まり60〜80%のものだけ再表示
+  history = historyAll.slice(0, 100).filter(function(e){
+    const y = parseFloat(e.yield_);
+    return !isNaN(y) && y >= 60 && y <= 80;
+  });
   localStorage.setItem('budomari_history', JSON.stringify(history));
   renderHistory();
 });
