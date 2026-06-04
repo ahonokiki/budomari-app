@@ -657,22 +657,28 @@
       </div>
     </div>
 
-    <!-- ④ 出来上がり重量（後日入力） -->
+    <!-- ④ 種類別　頭数・出来上がり重量（後日入力） -->
     <div class="field">
-      <label>出来上がり重量（後日入力）</label>
+      <label>種類別　頭数・出来上がり（後日入力）</label>
       <div class="input-row" style="margin-bottom:8px;">
-        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">セット</span>
-        <input type="number" id="output-set" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">セット</span>
+        <input type="number" id="set-heads" inputmode="decimal" placeholder="0" min="0" step="0.5" style="max-width:58px; text-align:center;">
+        <span class="unit" style="padding:0 2px;">頭</span>
+        <input type="number" id="output-set" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
       <div class="input-row" style="margin-bottom:8px;">
-        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">ハム</span>
-        <input type="number" id="output-ham" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">ハム</span>
+        <input type="number" id="ham-heads" inputmode="decimal" placeholder="0" min="0" step="0.5" style="max-width:58px; text-align:center;">
+        <span class="unit" style="padding:0 2px;">頭</span>
+        <input type="number" id="output-ham" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
       <div class="input-row">
-        <span class="unit" style="padding:0 4px 0 14px; min-width:54px; text-align:left;">パーツ</span>
-        <input type="number" id="output-parts" inputmode="decimal" placeholder="" min="0" step="0.1">
+        <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">パーツ</span>
+        <input type="number" id="parts-heads" inputmode="decimal" placeholder="0" min="0" step="0.5" style="max-width:58px; text-align:center;">
+        <span class="unit" style="padding:0 2px;">頭</span>
+        <input type="number" id="output-parts" inputmode="decimal" placeholder="0" min="0" step="0.1">
         <span class="unit">kg</span>
       </div>
     </div>
@@ -866,7 +872,7 @@ let branchItems = JSON.parse(localStorage.getItem('budomari_branchItems') || '[]
 })();
 
 // ── 入力途中の自動保存（下書き）：加重平均・出来上がりも打った瞬間に保存 ──
-const DRAFT_FIELDS = ['weighted-price','output-set','output-ham','output-parts'];
+const DRAFT_FIELDS = ['weighted-price','set-heads','output-set','ham-heads','output-ham','parts-heads','output-parts'];
 function saveDraft(){
   const d = {};
   DRAFT_FIELDS.forEach(function(id){ d[id] = document.getElementById(id).value; });
