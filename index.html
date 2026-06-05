@@ -873,6 +873,13 @@
       <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「編集」で<b>名称・単位の変更</b>、<b>▲▼で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。(火)・(木)の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
     </div>
 
+    <div class="field">
+      <div class="settings-section-title">パーツ係数（目標単価＝加重平均×係数）</div>
+      <div id="set-coef"></div>
+      <button id="set-coef-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 部位を追加</button>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「編集」で<b>係数の変更</b>・<b>部位の追加/削除</b>・<b>▲▼並べ替え</b>。各部位の<b>目標単価＝加重平均単価×係数</b>。ハムは「ハムの係数」を使用。</div>
+    </div>
+
     <!-- 2段階確認 -->
     <button class="kp-done" id="set-save" style="width:100%; margin-top:6px;">設定を保存</button>
     <div id="set-confirm" style="display:none; margin-top:10px; background:#fff3e0; border:1px solid #ffd9a0; border-radius:12px; padding:12px; text-align:center;">
@@ -1108,17 +1115,31 @@ function applyByproductDefaults(){
 // ── 設定画面（加工賃・品目マスタ：編集モードで改名/単位/火木/上下/追加削除／2段階確認） ──
 let setEditing = false;
 let editItems = null;
+let editCoef = null;
+let editHamCoef = null;
 function readEditInputs(){
-  if (!editItems) return;
-  document.querySelectorAll('#set-items .set-item').forEach(function(row){
-    const i = parseInt(row.getAttribute('data-i'), 10);
-    if (!editItems[i]) return;
-    editItems[i].name = row.querySelector('.si-name').value;
-    editItems[i].unit = row.querySelector('.si-unit').value;
-    const tu = row.querySelector('.si-tue').value, th = row.querySelector('.si-thu').value;
-    editItems[i].tue = (tu === '' ? '' : parseFloat(tu));
-    editItems[i].thu = (th === '' ? '' : parseFloat(th));
-  });
+  if (editItems) {
+    document.querySelectorAll('#set-items .set-item').forEach(function(row){
+      const i = parseInt(row.getAttribute('data-i'), 10);
+      if (!editItems[i]) return;
+      editItems[i].name = row.querySelector('.si-name').value;
+      editItems[i].unit = row.querySelector('.si-unit').value;
+      const tu = row.querySelector('.si-tue').value, th = row.querySelector('.si-thu').value;
+      editItems[i].tue = (tu === '' ? '' : parseFloat(tu));
+      editItems[i].thu = (th === '' ? '' : parseFloat(th));
+    });
+  }
+  if (editCoef) {
+    document.querySelectorAll('#set-coef .coef-item').forEach(function(row){
+      const i = parseInt(row.getAttribute('data-ci'), 10);
+      if (!editCoef[i]) return;
+      editCoef[i].name = row.querySelector('.ci-name').value;
+      const kv = row.querySelector('.ci-k').value;
+      editCoef[i].k = (kv === '' ? '' : parseFloat(kv));
+    });
+    const hv = document.getElementById('set-hamcoef');
+    if (hv) editHamCoef = (hv.value === '' ? '' : parseFloat(hv.value));
+  }
 }
 function renderSettings(){
   document.getElementById('set-modal').classList.toggle('editing', setEditing);
@@ -1150,15 +1171,52 @@ function renderSettings(){
         + '<span class="su" style="color:var(--accent2);">' + (fx.length ? '固定 ' + fx.join('・') : '') + '</span></div>';
     }).join('');
   }
+  renderCoefSettings();
 }
-function openSettings(){ setEditing = false; editItems = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-webhook').value = loadWebhook(); document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
+function renderCoefSettings(){
+  const cont = document.getElementById('set-coef');
+  if (!cont) return;
+  document.getElementById('set-coef-add').style.display = setEditing ? 'block' : 'none';
+  if (setEditing) {
+    // ハムロース（係数リスト先頭・固定／計算は出来上がりハム重量を使用）
+    let html = '<div class="scard">'
+      + '<div class="scard-head"><span class="scard-id">ハム</span></div>'
+      + '<div class="scard-row"><span class="scard-label">部位名</span><input type="text" value="ハムロース" readonly style="background:var(--input-bg);color:var(--muted);"></div>'
+      + '<div class="scard-row split"><div class="scard-cell"><label>係数</label><input id="set-hamcoef" type="number" inputmode="decimal" min="0" step="0.01" value="' + (editHamCoef === '' || editHamCoef == null ? '' : editHamCoef) + '" placeholder="―"></div></div>'
+      + '</div>';
+    html += editCoef.map(function(c, i){
+      return '<div class="coef-item scard" data-ci="' + i + '">'
+        + '<div class="scard-head"><span class="scard-id">No.' + (i + 1) + '</span>'
+        +   '<div class="scard-actions">'
+        +     '<button type="button" class="ci-up"   data-ci="' + i + '" title="上へ">▲</button>'
+        +     '<button type="button" class="ci-down" data-ci="' + i + '" title="下へ">▼</button>'
+        +     '<button type="button" class="ci-del"  data-ci="' + i + '" title="削除">🗑</button>'
+        +   '</div></div>'
+        + '<div class="scard-row"><span class="scard-label">部位名</span><input class="ci-name" type="text" value="' + escHtml(c.name) + '" placeholder="部位名"></div>'
+        + '<div class="scard-row split"><div class="scard-cell"><label>係数</label><input class="ci-k" type="number" inputmode="decimal" min="0" step="0.01" value="' + (c.k === '' || c.k == null ? '' : c.k) + '" placeholder="―"></div></div>'
+        + '</div>';
+    }).join('');
+    cont.innerHTML = html;
+  } else {
+    let chips = '<div class="bp-row"><span class="nm">ハムロース</span><span class="su" style="color:var(--accent2);">×' + (APPCFG.hamCoef != null ? APPCFG.hamCoef : 2.5) + '</span></div>';
+    chips += (APPCFG.coef || []).map(function(c){
+      return '<div class="bp-row"><span class="nm">' + escHtml(c.name) + '</span><span class="su" style="color:var(--accent2);">×' + c.k + '</span></div>';
+    }).join('');
+    cont.innerHTML = chips;
+  }
+}
+function openSettings(){ setEditing = false; editItems = null; editCoef = null; editHamCoef = null; document.getElementById('set-fee').value = APPCFG.fee; document.getElementById('set-webhook').value = loadWebhook(); document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; renderSettings(); document.getElementById('set-modal').classList.add('show'); }
 function closeSettings(){ document.getElementById('set-modal').classList.remove('show'); }
 document.getElementById('settings-btn').addEventListener('click', openSettings);
 document.getElementById('set-x').addEventListener('click', closeSettings);
 document.getElementById('set-modal').addEventListener('click', function(e){ if (e.target === this) closeSettings(); });
 document.getElementById('set-edit-btn').addEventListener('click', function(){
-  if (!setEditing) { editItems = JSON.parse(JSON.stringify(APPCFG.items)); setEditing = true; }
-  else { readEditInputs(); setEditing = false; }
+  if (!setEditing) {
+    editItems = JSON.parse(JSON.stringify(APPCFG.items));
+    editCoef = JSON.parse(JSON.stringify(APPCFG.coef || []));
+    editHamCoef = (APPCFG.hamCoef != null) ? APPCFG.hamCoef : 2.5;
+    setEditing = true;
+  } else { readEditInputs(); setEditing = false; }
   renderSettings();
 });
 document.getElementById('set-add').addEventListener('click', function(){ readEditInputs(); editItems.push({ name:'', unit:'袋', tue:'', thu:'' }); renderSettings(); });
@@ -1172,6 +1230,17 @@ document.getElementById('set-items').addEventListener('click', function(e){
   else if (del) { editItems.splice(i, 1); }
   renderSettings();
 });
+document.getElementById('set-coef-add').addEventListener('click', function(){ readEditInputs(); editCoef.push({ name:'', k:'' }); renderSettings(); });
+document.getElementById('set-coef').addEventListener('click', function(e){
+  const up = e.target.closest('.ci-up'), dn = e.target.closest('.ci-down'), del = e.target.closest('.ci-del');
+  if (!up && !dn && !del) return;
+  readEditInputs();
+  const i = parseInt((up || dn || del).getAttribute('data-ci'), 10);
+  if (up && i > 0) { const t = editCoef[i-1]; editCoef[i-1] = editCoef[i]; editCoef[i] = t; }
+  else if (dn && i < editCoef.length - 1) { const t = editCoef[i+1]; editCoef[i+1] = editCoef[i]; editCoef[i] = t; }
+  else if (del) { editCoef.splice(i, 1); }
+  renderSettings();
+});
 document.getElementById('set-save').addEventListener('click', function(){ document.getElementById('set-confirm').style.display = 'block'; this.style.display = 'none'; });
 document.getElementById('set-cancel').addEventListener('click', function(){ document.getElementById('set-confirm').style.display = 'none'; document.getElementById('set-save').style.display = ''; });
 document.getElementById('set-confirm-yes').addEventListener('click', function(){
@@ -1180,13 +1249,18 @@ document.getElementById('set-confirm-yes').addEventListener('click', function(){
   const items = (setEditing ? editItems : APPCFG.items)
     .map(function(it){ return { name:(it.name || '').trim(), unit:(it.unit || '').trim(), tue:it.tue, thu:it.thu }; })
     .filter(function(it){ return it.name !== ''; });
-  APPCFG = { fee: fee, items: items, coef: APPCFG.coef, hamCoef: APPCFG.hamCoef };
+  const coef = (setEditing ? editCoef : APPCFG.coef)
+    .map(function(c){ return { name:(c.name || '').trim(), k: (parseFloat(c.k) || 0) }; })
+    .filter(function(c){ return c.name !== '' && c.k > 0; });
+  let hamCoef = (APPCFG.hamCoef != null) ? APPCFG.hamCoef : 2.5;
+  if (setEditing && editHamCoef !== '' && editHamCoef != null && !isNaN(editHamCoef) && editHamCoef > 0) hamCoef = editHamCoef;
+  APPCFG = { fee: fee, items: items, coef: coef, hamCoef: hamCoef };
   saveConfig();
   // 記録先スプレッドシート（Webhook URL）を保存
   const wh = document.getElementById('set-webhook').value.trim();
   if (wh) localStorage.setItem('budomari_webhook', wh);
   else localStorage.removeItem('budomari_webhook');
-  setEditing = false; editItems = null;
+  setEditing = false; editItems = null; editCoef = null; editHamCoef = null;
   renderByproductInputs();
   renderCoefInputs();
   attachDraftListeners();
