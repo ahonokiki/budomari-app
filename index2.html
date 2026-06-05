@@ -1178,7 +1178,13 @@ function renderCoefSettings(){
   if (!cont) return;
   document.getElementById('set-coef-add').style.display = setEditing ? 'block' : 'none';
   if (setEditing) {
-    let html = editCoef.map(function(c, i){
+    // ハムロース（係数リスト先頭・固定／計算は出来上がりハム重量を使用）
+    let html = '<div class="scard">'
+      + '<div class="scard-head"><span class="scard-id">ハム</span></div>'
+      + '<div class="scard-row"><span class="scard-label">部位名</span><input type="text" value="ハムロース" readonly style="background:var(--input-bg);color:var(--muted);"></div>'
+      + '<div class="scard-row split"><div class="scard-cell"><label>係数</label><input id="set-hamcoef" type="number" inputmode="decimal" min="0" step="0.01" value="' + (editHamCoef === '' || editHamCoef == null ? '' : editHamCoef) + '" placeholder="―"></div></div>'
+      + '</div>';
+    html += editCoef.map(function(c, i){
       return '<div class="coef-item scard" data-ci="' + i + '">'
         + '<div class="scard-head"><span class="scard-id">No.' + (i + 1) + '</span>'
         +   '<div class="scard-actions">'
@@ -1190,14 +1196,12 @@ function renderCoefSettings(){
         + '<div class="scard-row split"><div class="scard-cell"><label>係数</label><input class="ci-k" type="number" inputmode="decimal" min="0" step="0.01" value="' + (c.k === '' || c.k == null ? '' : c.k) + '" placeholder="―"></div></div>'
         + '</div>';
     }).join('');
-    html += '<div class="scard-row" style="margin-top:8px;"><span class="scard-label" style="min-width:auto;">ハムの係数</span>'
-      + '<input id="set-hamcoef" type="number" inputmode="decimal" min="0" step="0.01" value="' + (editHamCoef === '' || editHamCoef == null ? '' : editHamCoef) + '" style="flex:0 0 100px;width:100px;text-align:center;"></div>';
     cont.innerHTML = html;
   } else {
-    let chips = (APPCFG.coef || []).map(function(c){
+    let chips = '<div class="bp-row"><span class="nm">ハムロース</span><span class="su" style="color:var(--accent2);">×' + (APPCFG.hamCoef != null ? APPCFG.hamCoef : 2.5) + '</span></div>';
+    chips += (APPCFG.coef || []).map(function(c){
       return '<div class="bp-row"><span class="nm">' + escHtml(c.name) + '</span><span class="su" style="color:var(--accent2);">×' + c.k + '</span></div>';
     }).join('');
-    chips += '<div class="bp-row"><span class="nm">ハム</span><span class="su" style="color:var(--accent2);">×' + (APPCFG.hamCoef != null ? APPCFG.hamCoef : 2.5) + '</span></div>';
     cont.innerHTML = chips;
   }
 }
