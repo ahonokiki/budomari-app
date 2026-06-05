@@ -602,6 +602,16 @@
   .scard-row.split .scard-cell{display:flex;align-items:center;gap:5px;flex:0 0 auto;}
   .scard-row.split .scard-cell label{font-size:13px;color:var(--accent2);font-weight:800;min-width:auto;}
   .scard-row.split .scard-cell input{flex:0 0 88px;width:88px;text-align:center;}
+  /* 設定セクション見出し・編集ボタン（冷凍在庫アプリと同じ） */
+  .settings-section-title{font-size:12px;font-weight:700;color:var(--accent);margin:16px 0 6px;padding-bottom:4px;border-bottom:2px solid var(--accent2);}
+  .unlock-btn{display:block;width:100%;padding:16px;background:#d68000;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:700;font-family:inherit;margin:6px 0 12px;letter-spacing:.08em;box-shadow:0 4px 14px rgba(214,128,0,.4);}
+  .unlock-btn:active{background:#b86d00;transform:scale(.98);}
+  .mode-msg{display:none;font-size:11px;margin:8px 0;line-height:1.4;text-align:center;}
+  .mode-locked{color:var(--muted);}
+  .mode-edit{color:var(--green);font-weight:700;}
+  #set-modal:not(.editing) .mode-locked{display:block;}
+  #set-modal.editing .mode-edit{display:block;}
+  #set-modal.editing .unlock-btn{display:none;}
 </style>
 </head>
 <body>
@@ -840,13 +850,13 @@
     <div class="kp-head"><h3>⚙ 設定</h3><button class="x" id="set-x">✕</button></div>
 
     <div class="field">
-      <label>記録先スプレッドシート（Webhook URL）</label>
+      <div class="settings-section-title">記録先スプレッドシート（Webhook URL）</div>
       <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;">
       <p style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;">GASで出たウェブアプリURLを貼ると、計算するたび自動でスプレッドシートに記録されます。<b>※一度入力すれば次回からは不要です。</b>空欄＝この端末内のみ。</p>
     </div>
 
     <div class="field">
-      <label>加工賃（円/頭）</label>
+      <div class="settings-section-title">加工賃（円/頭）</div>
       <div class="input-row">
         <input type="number" id="set-fee" inputmode="decimal" min="0" step="100">
         <span class="unit">円/頭</span>
@@ -854,13 +864,13 @@
     </div>
 
     <div class="field">
-      <label style="display:flex; align-items:center; justify-content:space-between;">
-        <span>副産物・パーツの品目（(火)・(木)の固定数量）</span>
-        <button id="set-edit-btn" style="background:var(--accent2); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700;">✏️ 品目を編集</button>
-      </label>
+      <div class="settings-section-title">副産物・パーツの品目（(火)・(木)の固定数量）</div>
+      <p class="mode-msg mode-locked">🔒 閲覧モード（下の橙ボタンで編集開始）</p>
+      <p class="mode-msg mode-edit">✏️ 編集モード（下の「保存」ボタンで反映）</p>
+      <button type="button" class="unlock-btn" id="set-edit-btn">編集</button>
       <div id="set-items"></div>
       <button id="set-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 品目を追加</button>
-      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「品目を編集」で<b>名称・単位の変更</b>、<b>↑↓で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。(火)・(木)の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「編集」で<b>名称・単位の変更</b>、<b>▲▼で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。(火)・(木)の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
     </div>
 
     <!-- 2段階確認 -->
@@ -1111,7 +1121,7 @@ function readEditInputs(){
   });
 }
 function renderSettings(){
-  document.getElementById('set-edit-btn').textContent = setEditing ? '✓ 編集を終える' : '✏️ 品目を編集';
+  document.getElementById('set-modal').classList.toggle('editing', setEditing);
   document.getElementById('set-add').style.display = setEditing ? 'block' : 'none';
   const cont = document.getElementById('set-items');
   if (setEditing) {
