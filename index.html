@@ -585,6 +585,33 @@
   /* 種類別の歩留（薄緑） */
   .yield-light td:last-child{ color:#5fae84 !important; font-weight:800 !important; font-size:15px !important; }
   .yield-light td:first-child{ color:#5fae84 !important; }
+  /* 品目編集カード（冷凍在庫アプリと同じスタイル） */
+  .scard{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:#fafbfd;}
+  .scard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .scard-id{font-size:11px;color:var(--muted);font-weight:700;}
+  .scard-actions{display:flex;gap:4px;}
+  .scard-actions button{background:#fff;border:1px solid var(--border);color:var(--muted);font-size:13px;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;}
+  .scard-actions button:active{background:#eef1f7;}
+  .scard-actions .si-del{color:var(--red);border-color:#f3c0bb;}
+  .scard-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+  .scard-row:last-child{margin-bottom:0;}
+  .scard-label{font-size:11px;font-weight:700;color:var(--muted);min-width:60px;}
+  .scard-row input{flex:1;padding:7px 8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;outline:none;min-width:0;color:var(--text);}
+  .scard-row input:focus{border-color:var(--accent2);}
+  .scard-row.split{gap:16px;justify-content:flex-start;}
+  .scard-row.split .scard-cell{display:flex;align-items:center;gap:5px;flex:0 0 auto;}
+  .scard-row.split .scard-cell label{font-size:13px;color:var(--accent2);font-weight:800;min-width:auto;}
+  .scard-row.split .scard-cell input{flex:0 0 88px;width:88px;text-align:center;}
+  /* 設定セクション見出し・編集ボタン（冷凍在庫アプリと同じ） */
+  .settings-section-title{font-size:12px;font-weight:700;color:var(--accent);margin:16px 0 6px;padding-bottom:4px;border-bottom:2px solid var(--accent2);}
+  .unlock-btn{display:block;width:100%;padding:16px;background:#d68000;color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:700;font-family:inherit;margin:6px 0 12px;letter-spacing:.08em;box-shadow:0 4px 14px rgba(214,128,0,.4);}
+  .unlock-btn:active{background:#b86d00;transform:scale(.98);}
+  .mode-msg{display:none;font-size:11px;margin:8px 0;line-height:1.4;text-align:center;}
+  .mode-locked{color:var(--muted);}
+  .mode-edit{color:var(--green);font-weight:700;}
+  #set-modal:not(.editing) .mode-locked{display:block;}
+  #set-modal.editing .mode-edit{display:block;}
+  #set-modal.editing .unlock-btn{display:none;}
 </style>
 </head>
 <body>
@@ -712,6 +739,12 @@
       </div>
     </div>
 
+    <!-- ⑤ パーツ部位の重量（任意・係数で目標単価＆粗利%） -->
+    <div class="field">
+      <label>パーツ部位の重量（任意）<span style="font-weight:500;color:var(--muted);font-size:11px;">　入れると粗利%まで出ます</span></label>
+      <div id="coef-list"></div>
+    </div>
+
     <div class="field">
       <label>粗利設定</label>
       <div class="input-row">
@@ -783,6 +816,7 @@
           <td id="r-yparts">—</td>
         </tr>
       </table>
+      <div id="coef-result" style="display:none;"></div>
       <div class="message-box" id="msg-box"></div>
       <button class="copy-btn" id="copy-btn">
         <span>📋</span> テキストをコピー
@@ -816,7 +850,13 @@
     <div class="kp-head"><h3>⚙ 設定</h3><button class="x" id="set-x">✕</button></div>
 
     <div class="field">
-      <label>加工賃（円/頭）</label>
+      <div class="settings-section-title">記録先スプレッドシート（Webhook URL）</div>
+      <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;">
+      <p style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;">GASで出たウェブアプリURLを貼ると、計算するたび自動でスプレッドシートに記録されます。<b>※一度入力すれば次回からは不要です。</b>空欄＝この端末内のみ。</p>
+    </div>
+
+    <div class="field">
+      <div class="settings-section-title">加工賃（円/頭）</div>
       <div class="input-row">
         <input type="number" id="set-fee" inputmode="decimal" min="0" step="100">
         <span class="unit">円/頭</span>
@@ -824,19 +864,13 @@
     </div>
 
     <div class="field">
-      <label style="display:flex; align-items:center; justify-content:space-between;">
-        <span>副産物・パーツの品目（🔵火・🟢木の固定数量）</span>
-        <button id="set-edit-btn" style="background:var(--accent2); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700;">✏️ 品目を編集</button>
-      </label>
+      <div class="settings-section-title">副産物・パーツの品目（(火)・(木)の固定数量）</div>
+      <p class="mode-msg mode-locked">🔒 閲覧モード（下の橙ボタンで編集開始）</p>
+      <p class="mode-msg mode-edit">✏️ 編集モード（下の「保存」ボタンで反映）</p>
+      <button type="button" class="unlock-btn" id="set-edit-btn">編集</button>
       <div id="set-items"></div>
       <button id="set-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 品目を追加</button>
-      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「品目を編集」で<b>名称・単位の変更</b>、<b>↑↓で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。火・木の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
-    </div>
-
-    <div class="field">
-      <label>記録先スプレッドシート（Webhook URL）</label>
-      <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/.../exec" style="width:100%;">
-      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">GASをデプロイして出た<b>ウェブアプリURL</b>を貼ると、計算するたび<b>自動で台帳（スプレッドシート）に記録</b>されます。<b>空欄＝この端末内のみ</b>。</div>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「編集」で<b>名称・単位の変更</b>、<b>▲▼で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。(火)・(木)の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
     </div>
 
     <!-- 2段階確認 -->
@@ -900,11 +934,25 @@ function defaultConfig(){
     { name:'カタロース',    unit:'本',                 tue:'', thu:'' },
     { name:'バラ',          unit:'枚',                 tue:'', thu:'' },
     { name:'スジナシヒレ',  unit:'kg位',               tue:'', thu:'' }
-  ]};
+  ], coef:[
+    { name:'ロース',     k:2.5  },
+    { name:'バラ',       k:2.2  },
+    { name:'カタロース', k:2.2  },
+    { name:'モモ',       k:1.38 },
+    { name:'ウデ',       k:1.28 },
+    { name:'ヒレ',       k:2.8  }
+  ], hamCoef:2.5 };
 }
 let APPCFG = (function(){
-  try { const c = JSON.parse(localStorage.getItem('budomari_config') || 'null'); if (c && Array.isArray(c.items) && c.items.length) return { fee: c.fee || 3500, items: c.items }; } catch(e){}
-  return defaultConfig();
+  const d = defaultConfig();
+  try { const c = JSON.parse(localStorage.getItem('budomari_config') || 'null');
+    if (c && Array.isArray(c.items) && c.items.length) return {
+      fee: c.fee || 3500, items: c.items,
+      coef: (Array.isArray(c.coef) && c.coef.length) ? c.coef : d.coef,
+      hamCoef: (c.hamCoef != null) ? c.hamCoef : d.hamCoef
+    };
+  } catch(e){}
+  return d;
 })();
 function saveConfig(){ localStorage.setItem('budomari_config', JSON.stringify(APPCFG)); }
 function FEE(){ return Number(APPCFG.fee) || 3500; }
@@ -919,6 +967,18 @@ function renderByproductInputs(){
   }).join('');
 }
 renderByproductInputs();
+
+// パーツ部位（係数）の重量入力欄を生成
+function coefId(i){ return 'coefw-' + i; }
+function renderCoefInputs(){
+  const el = document.getElementById('coef-list');
+  if (!el) return;
+  el.innerHTML = (APPCFG.coef || []).map(function(c, i){
+    return '<div class="input-row" style="margin-bottom:6px;"><span class="unit" style="padding:0 4px 0 12px;min-width:64px;text-align:left;">' + escHtml(c.name) + '</span>'
+      + '<input type="number" id="' + coefId(i) + '" inputmode="decimal" placeholder="0" min="0" step="0.1"><span class="unit">kg</span></div>';
+  }).join('');
+}
+renderCoefInputs();
 
 // 粗利入力初期化
 document.getElementById('margin-input').value = marginRate;
@@ -1006,7 +1066,8 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
 // ── 入力途中の自動保存（下書き）：加重平均・出来上がり・副産物も打った瞬間に保存 ──
 function draftFields(){
   const fixed = ['weighted-price','output-set','output-ham','output-parts','bp-other'];
-  return fixed.concat(APPCFG.items.map(function(_, i){ return bpId(i); }));
+  return fixed.concat(APPCFG.items.map(function(_, i){ return bpId(i); }))
+              .concat((APPCFG.coef || []).map(function(_, i){ return coefId(i); }));
 }
 function saveDraft(){
   const d = {};
@@ -1060,30 +1121,31 @@ function readEditInputs(){
   });
 }
 function renderSettings(){
-  document.getElementById('set-edit-btn').textContent = setEditing ? '✓ 編集を終える' : '✏️ 品目を編集';
+  document.getElementById('set-modal').classList.toggle('editing', setEditing);
   document.getElementById('set-add').style.display = setEditing ? 'block' : 'none';
   const cont = document.getElementById('set-items');
   if (setEditing) {
     cont.innerHTML = editItems.map(function(it, i){
-      return '<div class="set-item" data-i="' + i + '" style="border:1px solid var(--border);border-radius:10px;padding:7px;margin-bottom:7px;background:#fff;">'
-        + '<div style="display:flex;gap:5px;margin-bottom:5px;">'
-        +   '<input class="si-name" placeholder="品目名" value="' + escHtml(it.name) + '" style="flex:2;min-width:0;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:14px;">'
-        +   '<input class="si-unit" placeholder="単位" value="' + escHtml(it.unit) + '" style="flex:1;min-width:0;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:14px;">'
+      return '<div class="set-item scard" data-i="' + i + '">'
+        + '<div class="scard-head"><span class="scard-id">No.' + (i + 1) + '</span>'
+        +   '<div class="scard-actions">'
+        +     '<button type="button" class="si-up"   data-i="' + i + '" title="上へ">▲</button>'
+        +     '<button type="button" class="si-down" data-i="' + i + '" title="下へ">▼</button>'
+        +     '<button type="button" class="si-del"  data-i="' + i + '" title="削除">🗑</button>'
+        +   '</div></div>'
+        + '<div class="scard-row"><span class="scard-label">品名</span><input class="si-name" type="text" value="' + escHtml(it.name) + '" placeholder="品目名"></div>'
+        + '<div class="scard-row"><span class="scard-label">単位</span><input class="si-unit" type="text" value="' + escHtml(it.unit) + '" placeholder="袋 / 本 等"></div>'
+        + '<div class="scard-row split">'
+        +   '<div class="scard-cell"><label>(火)</label><input class="si-tue" type="number" inputmode="decimal" min="0" value="' + (it.tue === '' || it.tue == null ? '' : it.tue) + '" placeholder="―"></div>'
+        +   '<div class="scard-cell"><label>(木)</label><input class="si-thu" type="number" inputmode="decimal" min="0" value="' + (it.thu === '' || it.thu == null ? '' : it.thu) + '" placeholder="―"></div>'
         + '</div>'
-        + '<div style="display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;">'
-        +   '🔵火<input class="si-tue" type="number" min="0" value="' + (it.tue === '' || it.tue == null ? '' : it.tue) + '" style="width:44px;padding:6px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:14px;">'
-        +   '🟢木<input class="si-thu" type="number" min="0" value="' + (it.thu === '' || it.thu == null ? '' : it.thu) + '" style="width:44px;padding:6px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:14px;">'
-        +   '<span style="flex:1;"></span>'
-        +   '<button class="si-up"   data-i="' + i + '" style="padding:6px 9px;border:1px solid var(--border);background:#fff;border-radius:7px;">↑</button>'
-        +   '<button class="si-down" data-i="' + i + '" style="padding:6px 9px;border:1px solid var(--border);background:#fff;border-radius:7px;">↓</button>'
-        +   '<button class="si-del"  data-i="' + i + '" style="padding:6px 9px;border:1px solid #f3c0bb;background:#fff;color:var(--red);border-radius:7px;">🗑</button>'
-        + '</div></div>';
+        + '</div>';
     }).join('');
   } else {
     cont.innerHTML = APPCFG.items.map(function(it){
       const fx = [];
-      if (it.tue !== '' && it.tue != null) fx.push('火' + it.tue);
-      if (it.thu !== '' && it.thu != null) fx.push('木' + it.thu);
+      if (it.tue !== '' && it.tue != null) fx.push('(火)' + it.tue);
+      if (it.thu !== '' && it.thu != null) fx.push('(木)' + it.thu);
       return '<div class="bp-row"><span class="nm">' + escHtml(it.name) + escHtml(it.unit) + '</span>'
         + '<span class="su" style="color:var(--accent2);">' + (fx.length ? '固定 ' + fx.join('・') : '') + '</span></div>';
     }).join('');
@@ -1118,7 +1180,7 @@ document.getElementById('set-confirm-yes').addEventListener('click', function(){
   const items = (setEditing ? editItems : APPCFG.items)
     .map(function(it){ return { name:(it.name || '').trim(), unit:(it.unit || '').trim(), tue:it.tue, thu:it.thu }; })
     .filter(function(it){ return it.name !== ''; });
-  APPCFG = { fee: fee, items: items };
+  APPCFG = { fee: fee, items: items, coef: APPCFG.coef, hamCoef: APPCFG.hamCoef };
   saveConfig();
   // 記録先スプレッドシート（Webhook URL）を保存
   const wh = document.getElementById('set-webhook').value.trim();
@@ -1126,6 +1188,7 @@ document.getElementById('set-confirm-yes').addEventListener('click', function(){
   else localStorage.removeItem('budomari_webhook');
   setEditing = false; editItems = null;
   renderByproductInputs();
+  renderCoefInputs();
   attachDraftListeners();
   applyByproductDefaults();
   window.__setLots(window.__getLots());   // 加工賃合計・表示を再計算
@@ -1386,6 +1449,52 @@ function calculate() {
         document.getElementById(m[2]).style.display = 'none';
       }
     });
+  })();
+
+  // ── パーツ・ハムの係数版：各部位 目標単価＝加重平均×係数。重量を入れたら粗利%まで ──
+  (function(){
+    const box = document.getElementById('coef-result');
+    if (isNaN(wPrice) || wPrice <= 0) { box.style.display = 'none'; return; }
+    const coef = APPCFG.coef || [];
+    let partRev = 0, anyKg = false;
+    let rows = '';
+    coef.forEach(function(c, i){
+      const price = Math.round(wPrice * Number(c.k));
+      const el = document.getElementById(coefId(i));
+      const kg = el ? (parseFloat(el.value) || 0) : 0;
+      let right;
+      if (kg > 0) { anyKg = true; const rev = price * kg; partRev += rev;
+        right = '<td style="text-align:right;">' + kg.toFixed(1) + 'kg → ' + Math.round(rev).toLocaleString() + '円</td>';
+      } else { right = '<td style="text-align:right;color:var(--muted);">—</td>'; }
+      rows += '<tr><td>' + escHtml(c.name) + ' <span style="color:var(--muted);font-size:.85em;">×' + c.k + '</span></td>'
+            + '<td style="text-align:right;font-weight:700;color:var(--green);">' + price.toLocaleString() + '円/kg</td>' + right + '</tr>';
+    });
+    // パーツ粗利%（重量を入れた部位の売上合計 vs パーツ原価）
+    let marginLine = '';
+    if (anyKg && partRev > 0) {
+      const bwParts = window.__lotSum('parts'), hnParts = window.__lotHeads('parts');
+      const costParts = bwParts * wPrice + hnParts * FEE();
+      const gm = (partRev - costParts) / partRev * 100;
+      marginLine = '<div style="font-size:12px;font-weight:800;color:var(--green);margin-top:6px;">パーツ売上計 ' + Math.round(partRev).toLocaleString()
+        + '円 ／ 原価 ' + Math.round(costParts).toLocaleString() + '円 → <span style="font-size:14px;">粗利 ' + gm.toFixed(1) + '%</span></div>';
+    }
+    // ハム＝ロース係数
+    const hamK = (APPCFG.hamCoef != null) ? APPCFG.hamCoef : 2.5;
+    const hamPrice = Math.round(wPrice * hamK);
+    const hamKg = parseFloat(document.getElementById('output-ham').value) || 0;
+    let hamLine = 'ハムロース <span style="color:var(--muted);font-size:.85em;">×' + hamK + '</span>：<b style="color:var(--green);">' + hamPrice.toLocaleString() + '円/kg</b>';
+    if (hamKg > 0) {
+      const hamRev = hamPrice * hamKg;
+      const bwHam = window.__lotSum('ham'), hnHam = window.__lotHeads('ham');
+      const costHam = bwHam * wPrice + hnHam * FEE();
+      const hgm = (hamRev - costHam) / hamRev * 100;
+      hamLine += '　' + hamKg.toFixed(1) + 'kg → 売上 ' + Math.round(hamRev).toLocaleString() + '円・<b>粗利 ' + hgm.toFixed(1) + '%</b>';
+    }
+    box.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--accent);margin:12px 0 4px;">🥩 パーツ係数の目標単価（加重平均×係数）</div>'
+      + '<table class="result-table">' + rows + '</table>'
+      + marginLine
+      + '<div style="font-size:12px;color:var(--accent);margin-top:8px;">' + hamLine + '</div>';
+    box.style.display = 'block';
   })();
 
   document.getElementById('results-area').style.display = 'block';
