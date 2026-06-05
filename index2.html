@@ -823,6 +823,12 @@
     <div class="kp-head"><h3>⚙ 設定</h3><button class="x" id="set-x">✕</button></div>
 
     <div class="field">
+      <label>記録先スプレッドシート（Webhook URL）</label>
+      <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;">
+      <p style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;">GASで出たウェブアプリURLを貼ると、計算するたび自動でスプレッドシートに記録されます。<b>※一度入力すれば次回からは不要です。</b>空欄＝この端末内のみ。</p>
+    </div>
+
+    <div class="field">
       <label>加工賃（円/頭）</label>
       <div class="input-row">
         <input type="number" id="set-fee" inputmode="decimal" min="0" step="100">
@@ -838,12 +844,6 @@
       <div id="set-items"></div>
       <button id="set-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 品目を追加</button>
       <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「品目を編集」で<b>名称・単位の変更</b>、<b>↑↓で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。火・木の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
-    </div>
-
-    <div class="field">
-      <label>記録先スプレッドシート（Webhook URL）</label>
-      <input type="text" id="set-webhook" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/.../exec" style="width:100%;">
-      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">GASをデプロイして出た<b>ウェブアプリURL</b>を貼ると、計算するたび<b>自動で台帳（スプレッドシート）に記録</b>されます。<b>空欄＝この端末内のみ</b>。</div>
     </div>
 
     <!-- 2段階確認 -->
