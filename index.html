@@ -739,7 +739,12 @@
       </div>
     </div>
 
-    <!-- ⑤ パーツ部位の重量（任意・係数で目標単価＆粗利%） -->
+    <!-- ⑤ 係数版：ハム部位／パーツ部位の重量（任意・各部位×係数で目標単価＆粗利%） -->
+    <div class="field">
+      <label>ハム部位の重量（任意）<span style="font-weight:500;color:var(--muted);font-size:11px;">　入れると粗利%まで出ます</span></label>
+      <div id="ham-list"></div>
+    </div>
+
     <div class="field">
       <label>パーツ部位の重量（任意）<span style="font-weight:500;color:var(--muted);font-size:11px;">　入れると粗利%まで出ます</span></label>
       <div id="coef-list"></div>
@@ -985,7 +990,21 @@ function renderCoefInputs(){
       + '<input type="number" id="' + coefId(i) + '" inputmode="decimal" placeholder="0" min="0" step="0.1"><span class="unit">kg</span></div>';
   }).join('');
 }
+// ハムの部位＝先頭「ハムロース」(ハムロース係数)＋パーツと同じ全部位（ロース含む・同じ係数）
+function hamParts(){
+  return [{ name:'ハムロース', k:(APPCFG.hamCoef != null ? APPCFG.hamCoef : 2.5) }].concat(APPCFG.coef || []);
+}
+function hamId(i){ return 'hamw-' + i; }
+function renderHamInputs(){
+  const el = document.getElementById('ham-list');
+  if (!el) return;
+  el.innerHTML = hamParts().map(function(p, i){
+    return '<div class="input-row" style="margin-bottom:6px;"><span class="unit" style="padding:0 4px 0 12px;min-width:64px;text-align:left;">' + escHtml(p.name) + '</span>'
+      + '<input type="number" id="' + hamId(i) + '" inputmode="decimal" placeholder="0" min="0" step="0.1"><span class="unit">kg</span></div>';
+  }).join('');
+}
 renderCoefInputs();
+renderHamInputs();
 
 // 粗利入力初期化
 document.getElementById('margin-input').value = marginRate;
@@ -1074,7 +1093,8 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
 function draftFields(){
   const fixed = ['weighted-price','output-set','output-ham','output-parts','bp-other'];
   return fixed.concat(APPCFG.items.map(function(_, i){ return bpId(i); }))
-              .concat((APPCFG.coef || []).map(function(_, i){ return coefId(i); }));
+              .concat((APPCFG.coef || []).map(function(_, i){ return coefId(i); }))
+              .concat(hamParts().map(function(_, i){ return hamId(i); }));
 }
 function saveDraft(){
   const d = {};
@@ -1263,6 +1283,7 @@ document.getElementById('set-confirm-yes').addEventListener('click', function(){
   setEditing = false; editItems = null; editCoef = null; editHamCoef = null;
   renderByproductInputs();
   renderCoefInputs();
+  renderHamInputs();
   attachDraftListeners();
   applyByproductDefaults();
   window.__setLots(window.__getLots());   // 加工賃合計・表示を再計算
@@ -1552,22 +1573,34 @@ function calculate() {
       marginLine = '<div style="font-size:12px;font-weight:800;color:var(--green);margin-top:6px;">パーツ売上計 ' + Math.round(partRev).toLocaleString()
         + '円 ／ 原価 ' + Math.round(costParts).toLocaleString() + '円 → <span style="font-size:14px;">粗利 ' + gm.toFixed(1) + '%</span></div>';
     }
-    // ハム＝ロース係数
-    const hamK = (APPCFG.hamCoef != null) ? APPCFG.hamCoef : 2.5;
-    const hamPrice = Math.round(wPrice * hamK);
-    const hamKg = parseFloat(document.getElementById('output-ham').value) || 0;
-    let hamLine = 'ハムロース <span style="color:var(--muted);font-size:.85em;">×' + hamK + '</span>：<b style="color:var(--green);">' + hamPrice.toLocaleString() + '円/kg</b>';
-    if (hamKg > 0) {
-      const hamRev = hamPrice * hamKg;
+    // ── ハム部位（ハムロース＋他部位）＝各部位×係数。重量を入れたら粗利%まで ──
+    const hp = hamParts();
+    let hamRev = 0, anyHam = false, hamRows = '';
+    hp.forEach(function(p, i){
+      const price = Math.round(wPrice * Number(p.k));
+      const el = document.getElementById(hamId(i));
+      const kg = el ? (parseFloat(el.value) || 0) : 0;
+      let right;
+      if (kg > 0) { anyHam = true; const rev = price * kg; hamRev += rev;
+        right = '<td style="text-align:right;">' + kg.toFixed(1) + 'kg → ' + Math.round(rev).toLocaleString() + '円</td>';
+      } else { right = '<td style="text-align:right;color:var(--muted);">—</td>'; }
+      hamRows += '<tr><td>' + escHtml(p.name) + ' <span style="color:var(--muted);font-size:.85em;">×' + p.k + '</span></td>'
+        + '<td style="text-align:right;font-weight:700;color:var(--green);">' + price.toLocaleString() + '円/kg</td>' + right + '</tr>';
+    });
+    let hamMarginLine = '';
+    if (anyHam && hamRev > 0) {
       const bwHam = window.__lotSum('ham'), hnHam = window.__lotHeads('ham');
       const costHam = bwHam * wPrice + hnHam * FEE();
       const hgm = (hamRev - costHam) / hamRev * 100;
-      hamLine += '　' + hamKg.toFixed(1) + 'kg → 売上 ' + Math.round(hamRev).toLocaleString() + '円・<b>粗利 ' + hgm.toFixed(1) + '%</b>';
+      hamMarginLine = '<div style="font-size:12px;font-weight:800;color:var(--green);margin-top:6px;">ハム売上計 ' + Math.round(hamRev).toLocaleString()
+        + '円 ／ 原価 ' + Math.round(costHam).toLocaleString() + '円 → <span style="font-size:14px;">粗利 ' + hgm.toFixed(1) + '%</span></div>';
     }
     box.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--accent);margin:12px 0 4px;">🥩 パーツ係数の目標単価（加重平均×係数）</div>'
       + '<table class="result-table">' + rows + '</table>'
       + marginLine
-      + '<div style="font-size:12px;color:var(--accent);margin-top:8px;">' + hamLine + '</div>';
+      + '<div style="font-weight:700;font-size:13px;color:var(--accent);margin:12px 0 4px;">🍖 ハム係数の目標単価（加重平均×係数）</div>'
+      + '<table class="result-table">' + hamRows + '</table>'
+      + hamMarginLine;
     box.style.display = 'block';
   })();
 
