@@ -691,6 +691,7 @@
       <label>合計（自動）</label>
       <div class="input-row" style="background:#f0f2f5; border-color:#e0e4ed;">
         <span style="flex:1; padding:12px 14px; font-size:16px; font-weight:700; color:var(--accent);" id="heads-disp">0 頭</span>
+        <button type="button" id="heads-edit" style="background:#fff; border:1.5px solid var(--border); color:var(--accent2); border-radius:8px; padding:6px 10px; font-size:12px; font-weight:700; font-family:inherit; margin-right:8px; cursor:pointer; white-space:nowrap;">✏️頭数</button>
         <span class="unit" id="branch-total-disp" style="color:var(--accent); white-space:nowrap;">枝重 0.0kg</span>
       </div>
     </div>
@@ -1021,6 +1022,9 @@ let lots = { set: [], ham: [], parts: [] };
 try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if (L && L.set && L.ham && L.parts) lots = L; } catch(e){}
 (function(){
   let buf = '', kpType = 'set';
+  // 合計頭数の手動上書き（null＝枝重ベースの自動）
+  let headsOverride = null;
+  try { const ho = localStorage.getItem('budomari_heads_override'); if (ho != null && ho !== '') headsOverride = parseInt(ho, 10); } catch(e){}
   const NAME = { set: 'セット', ham: 'ハム', parts: 'パーツ' };
   const modal = document.getElementById('kp-modal');
   const titleEl = document.getElementById('kp-title');
@@ -1050,14 +1054,23 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
   function applyAll(){
     let totW = 0, totN = 0;
     ['set','ham','parts'].forEach(function(t){ applyType(t); totW += sumOf(lots[t]); totN += lots[t].length; });
+    const effN = (headsOverride != null) ? headsOverride : totN;   // 手動上書きがあればそれを使う
     document.getElementById('branch').value = totW > 0 ? totW.toFixed(1) : '';
-    document.getElementById('heads').value = totN;
-    document.getElementById('heads-disp').textContent = totN + ' 頭';
+    document.getElementById('heads').value = effN;
+    document.getElementById('heads-disp').innerHTML = effN + ' 頭'
+      + (headsOverride != null ? ' <span style="color:var(--red);font-size:12px;font-weight:700;">手動</span>' : '');
     document.getElementById('branch-total-disp').textContent = '枝重 ' + totW.toFixed(1) + 'kg';
-    document.getElementById('fee-disp').textContent = totN + '頭　合計 ' + (totN * FEE()).toLocaleString() + '円';
+    document.getElementById('fee-disp').textContent = effN + '頭　合計 ' + (effN * FEE()).toLocaleString() + '円';
     document.getElementById('fee-rate-disp').textContent = '1頭 ' + FEE().toLocaleString() + '円';
     localStorage.setItem('budomari_lots', JSON.stringify(lots));
   }
+  // 合計頭数の手動上書き（外部からも呼べる：新ロット/履歴復元でリセット用）
+  window.__setHeadsOverride = function(v){
+    headsOverride = (v == null) ? null : v;
+    if (v == null) localStorage.removeItem('budomari_heads_override');
+    else localStorage.setItem('budomari_heads_override', String(v));
+    applyAll();
+  };
   // 履歴復元・外部用
   window.__setLots = function(L){ lots = (L && L.set && L.ham && L.parts) ? L : { set: [], ham: [], parts: [] }; applyAll(); };
   window.__getLots = function(){ return lots; };
@@ -1085,6 +1098,18 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
   chipsEl.addEventListener('click', function(e){
     const c = e.target.closest('.kp-chip');
     if (c) { lots[kpType].splice(parseInt(c.getAttribute('data-i'), 10), 1); renderKp(); applyAll(); }
+  });
+  // 合計頭数を手で上書き（空欄でOK＝枝重ベースの自動に戻す）
+  document.getElementById('heads-edit').addEventListener('click', function(){
+    const autoN = lots.set.length + lots.ham.length + lots.parts.length;
+    const cur = (headsOverride != null) ? headsOverride : autoN;
+    const ans = prompt('合計頭数を手入力します。\n空欄のままOKすると、枝重どおりの自動（' + autoN + ' 頭）に戻します。', cur);
+    if (ans === null) return;                       // キャンセル
+    const t = String(ans).trim();
+    if (t === '') { window.__setHeadsOverride(null); return; }   // 自動に戻す
+    const n = parseInt(t, 10);
+    if (isNaN(n) || n < 0) { alert('頭数は0以上の数字で入れてください。'); return; }
+    window.__setHeadsOverride(n);
   });
   applyAll();   // 起動時に保存済み枝重を反映
 })();
@@ -1298,6 +1323,7 @@ document.getElementById('newlot-btn').addEventListener('click', function(){
   localStorage.removeItem('budomari_draft');
   draftFields().forEach(function(id){ const el = document.getElementById(id); if (el) el.value = ''; });
   localStorage.removeItem('budomari_lots');
+  window.__setHeadsOverride(null);   // 頭数の手動上書きも解除
   window.__setLots(null);
   document.getElementById('msg-text').value = '';
   document.getElementById('results-area').style.display = 'none';
@@ -1754,8 +1780,11 @@ function deleteHistory(i) {
 
 function loadHistory(i) {
   const e = history[i];
+  window.__setHeadsOverride(null);              // まず頭数の手動上書きを解除
   if (e.lots && e.lots.set) {
     window.__setLots(e.lots);                   // 種類別の枝重ごと復元（頭数も自動）
+    const autoN = e.lots.set.length + e.lots.ham.length + e.lots.parts.length;
+    if (e.heads != null && Number(e.heads) !== autoN) window.__setHeadsOverride(Number(e.heads));  // 保存時に手動上書きしていたら復元
   } else {
     window.__setLots(null);                     // 旧データは合計のみ
     document.getElementById('branch').value = e.branch || '';
