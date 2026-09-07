@@ -870,13 +870,14 @@
     </div>
 
     <div class="field">
-      <div class="settings-section-title">副産物・パーツの品目（(火)・(木)の固定数量）</div>
+      <div class="settings-section-title">副産物・パーツの品目（受取曜日ごとの固定数量）</div>
       <p class="mode-msg mode-locked">🔒 閲覧モード（下の橙ボタンで編集開始）</p>
       <p class="mode-msg mode-edit">✏️ 編集モード（下の「保存」ボタンで反映）</p>
       <button type="button" class="unlock-btn" id="set-edit-btn">編集</button>
+      <div id="set-days"></div>
       <div id="set-items"></div>
       <button id="set-add" style="display:none; width:100%; margin-top:6px; padding:11px; background:#fff; border:1.5px dashed var(--accent2); color:var(--accent2); border-radius:10px; font-size:14px; font-weight:700;">＋ 品目を追加</button>
-      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「編集」で<b>名称・単位の変更</b>、<b>▲▼で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。(火)・(木)の数字＝受取曜日ごとの固定発注（空欄=入れない）。</div>
+      <div style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;">「編集」で<b>受取曜日を選択</b>（上の曜日ボタン・発注→次の曜日で受取）、<b>名称・単位の変更</b>、<b>▲▼で並べ替え</b>、<b>🗑で削除</b>、<b>＋で追加</b>。各曜日の数字＝その曜日受取の固定発注（空欄=入れない）。</div>
     </div>
 
     <div class="field">
@@ -936,17 +937,17 @@ let marginRate = parseFloat(localStorage.getItem('budomari_margin') || '10');
 // ── 設定（加工賃・副産物の品目マスタ：名前/単位/火木の固定数量） ──
 // 発注の各行 = name + 数量 + unit（例 name="ガラ10kg×" unit="袋" → ガラ10kg×4袋）
 function defaultConfig(){
-  return { fee:3500, items:[
-    { name:'ガラ10kg×',     unit:'袋',                 tue:'', thu:4 },
-    { name:'背骨10kg×',     unit:'袋',                 tue:'', thu:4 },
-    { name:'ゲンコツ10kg×', unit:'袋',                 tue:'', thu:4 },
-    { name:'ゲンコツ5kg×',  unit:'袋(モモスネなし¥180-)', tue:6,  thu:'' },
-    { name:'脂10kg×',       unit:'袋',                 tue:'', thu:'' },
-    { name:'ハラ脂10kg×',   unit:'袋',                 tue:'', thu:'' },
-    { name:'ロース',        unit:'本',                 tue:'', thu:'' },
-    { name:'カタロース',    unit:'本',                 tue:'', thu:'' },
-    { name:'バラ',          unit:'枚',                 tue:'', thu:'' },
-    { name:'スジナシヒレ',  unit:'kg位',               tue:'', thu:'' }
+  return { fee:3500, days:[2,4], items:[
+    { name:'ガラ10kg×',     unit:'袋',                 q:{4:4} },
+    { name:'背骨10kg×',     unit:'袋',                 q:{4:4} },
+    { name:'ゲンコツ10kg×', unit:'袋',                 q:{4:4} },
+    { name:'ゲンコツ5kg×',  unit:'袋(モモスネなし¥180-)', q:{2:6} },
+    { name:'脂10kg×',       unit:'袋',                 q:{} },
+    { name:'ハラ脂10kg×',   unit:'袋',                 q:{} },
+    { name:'ロース',        unit:'本',                 q:{} },
+    { name:'カタロース',    unit:'本',                 q:{} },
+    { name:'バラ',          unit:'枚',                 q:{} },
+    { name:'スジナシヒレ',  unit:'kg位',               q:{} }
   ], coef:[
     { name:'ロース',     k:2.5  },
     { name:'バラ',       k:2.2  },
@@ -956,11 +957,20 @@ function defaultConfig(){
     { name:'ヒレ',       k:2.8  }
   ], hamCoef:2.5 };
 }
+// 旧形式(tue/thu)を曜日マップ q{曜日番号:数量} に移行。火=2 木=4。
+function migrateItem(it){
+  var q = {};
+  if (it.q && typeof it.q === 'object') { Object.keys(it.q).forEach(function(k){ var v = it.q[k]; if (v != null && v !== '') q[k] = v; }); }
+  else { if (it.tue != null && it.tue !== '') q['2'] = it.tue; if (it.thu != null && it.thu !== '') q['4'] = it.thu; }
+  return { name: it.name, unit: it.unit, q: q };
+}
 let APPCFG = (function(){
   const d = defaultConfig();
   try { const c = JSON.parse(localStorage.getItem('budomari_config') || 'null');
     if (c && Array.isArray(c.items) && c.items.length) return {
-      fee: c.fee || 3500, items: c.items,
+      fee: c.fee || 3500,
+      days: (Array.isArray(c.days) && c.days.length) ? c.days.filter(function(n){ return n >= 1 && n <= 5; }) : [2,4],
+      items: c.items.map(migrateItem),
       coef: (Array.isArray(c.coef) && c.coef.length) ? c.coef : d.coef,
       hamCoef: (c.hamCoef != null) ? c.hamCoef : d.hamCoef
     };
@@ -971,6 +981,10 @@ function saveConfig(){ localStorage.setItem('budomari_config', JSON.stringify(AP
 function FEE(){ return Number(APPCFG.fee) || 3500; }
 function escHtml(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function bpId(i){ return 'bp-' + i; }
+// ── 受取曜日ユーティリティ（月=1〜金=5 から選択。既定は火=2・木=4）──
+var DOW = ['日','月','火','水','木','金','土'];
+function receiptDays(){ var a = (APPCFG.days || []).filter(function(n){ return n >= 1 && n <= 5; }); return a.length ? a.slice().sort(function(x,y){ return x - y; }) : [2,4]; }
+function qOf(it, n){ if (!it || !it.q) return null; var v = it.q[n]; return (v == null || v === '') ? null : v; }
 
 // 副産物の入力欄（品目マスタから生成）
 function renderByproductInputs(){
@@ -1172,12 +1186,11 @@ restoreDraft();
 // ── 受取曜日に連動した副産物の固定発注（空欄のみ自動記入・上書き可） ──
 // 火曜受取: ゲンコツ5kg×6袋 ／ 木曜受取: ガラ×4・背骨×4・ゲンコツ10kg×4
 function applyByproductDefaults(){
-  const youbi = nextReceiptYoubi();   // '火' or '木'
-  const day = youbi === '火' ? 'tue' : (youbi === '木' ? 'thu' : null);
-  if (!day) return;
+  const n = nextReceiptDayNum();   // 次の受取曜日番号
+  if (n == null) return;
   APPCFG.items.forEach(function(it, i){
     const el = document.getElementById(bpId(i));
-    const dv = it[day];
+    const dv = qOf(it, n);
     if (el && (el.value === '' || el.value == null) && dv != null && dv !== '') el.value = dv;
   });
 }
@@ -1187,6 +1200,7 @@ let setEditing = false;
 let editItems = null;
 let editCoef = null;
 let editHamCoef = null;
+let editDays = null;   // 編集中の受取曜日（曜日番号の配列）
 function readEditInputs(){
   if (editItems) {
     document.querySelectorAll('#set-items .set-item').forEach(function(row){
@@ -1194,9 +1208,9 @@ function readEditInputs(){
       if (!editItems[i]) return;
       editItems[i].name = row.querySelector('.si-name').value;
       editItems[i].unit = row.querySelector('.si-unit').value;
-      const tu = row.querySelector('.si-tue').value, th = row.querySelector('.si-thu').value;
-      editItems[i].tue = (tu === '' ? '' : parseFloat(tu));
-      editItems[i].thu = (th === '' ? '' : parseFloat(th));
+      const q = {};
+      row.querySelectorAll('.si-q').forEach(function(inp){ const d = inp.getAttribute('data-d'), v = inp.value; if (v !== '') q[d] = parseFloat(v); });
+      editItems[i].q = q;
     });
   }
   if (editCoef) {
@@ -1211,11 +1225,29 @@ function readEditInputs(){
     if (hv) editHamCoef = (hv.value === '' ? '' : parseFloat(hv.value));
   }
 }
+function renderDaySelector(){
+  const el = document.getElementById('set-days');
+  if (!el) return;
+  if (setEditing) {
+    const btnBase = 'flex:1;min-width:46px;padding:9px 0;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-weight:700;font-size:15px;cursor:pointer;';
+    const btnOn = 'border-color:var(--accent2);background:var(--accent2);color:#fff;';
+    el.innerHTML = '<div class="scard" style="margin-bottom:10px;">'
+      + '<div class="scard-row" style="display:block;"><span class="scard-label">受取曜日（この曜日ごとに固定発注／発注→次の曜日で受取）</span></div>'
+      + '<div style="display:flex;gap:6px;margin-top:4px;">'
+      + [1,2,3,4,5].map(function(d){ const on = editDays.indexOf(d) >= 0; return '<button type="button" class="daybtn" data-d="' + d + '" style="' + btnBase + (on ? btnOn : '') + '">' + DOW[d] + '</button>'; }).join('')
+      + '</div></div>';
+  } else {
+    el.innerHTML = '<div class="bp-row"><span class="nm">受取曜日</span><span class="su" style="color:var(--accent2);">'
+      + receiptDays().map(function(d){ return DOW[d]; }).join('・') + '</span></div>';
+  }
+}
 function renderSettings(){
   document.getElementById('set-modal').classList.toggle('editing', setEditing);
   document.getElementById('set-add').style.display = setEditing ? 'block' : 'none';
+  renderDaySelector();
   const cont = document.getElementById('set-items');
   if (setEditing) {
+    const days = editDays;
     cont.innerHTML = editItems.map(function(it, i){
       return '<div class="set-item scard" data-i="' + i + '">'
         + '<div class="scard-head"><span class="scard-id">No.' + (i + 1) + '</span>'
@@ -1227,16 +1259,14 @@ function renderSettings(){
         + '<div class="scard-row"><span class="scard-label">品名</span><input class="si-name" type="text" value="' + escHtml(it.name) + '" placeholder="品目名"></div>'
         + '<div class="scard-row"><span class="scard-label">単位</span><input class="si-unit" type="text" value="' + escHtml(it.unit) + '" placeholder="袋 / 本 等"></div>'
         + '<div class="scard-row split">'
-        +   '<div class="scard-cell"><label>(火)</label><input class="si-tue" type="number" inputmode="decimal" min="0" value="' + (it.tue === '' || it.tue == null ? '' : it.tue) + '" placeholder="―"></div>'
-        +   '<div class="scard-cell"><label>(木)</label><input class="si-thu" type="number" inputmode="decimal" min="0" value="' + (it.thu === '' || it.thu == null ? '' : it.thu) + '" placeholder="―"></div>'
+        +   days.map(function(d){ const v = qOf(it, d); return '<div class="scard-cell"><label>(' + DOW[d] + ')</label><input class="si-q" data-d="' + d + '" type="number" inputmode="decimal" min="0" value="' + (v == null ? '' : v) + '" placeholder="―"></div>'; }).join('')
         + '</div>'
         + '</div>';
     }).join('');
   } else {
     cont.innerHTML = APPCFG.items.map(function(it){
       const fx = [];
-      if (it.tue !== '' && it.tue != null) fx.push('(火)' + it.tue);
-      if (it.thu !== '' && it.thu != null) fx.push('(木)' + it.thu);
+      receiptDays().forEach(function(d){ const v = qOf(it, d); if (v != null && v !== '') fx.push('(' + DOW[d] + ')' + v); });
       return '<div class="bp-row"><span class="nm">' + escHtml(it.name) + escHtml(it.unit) + '</span>'
         + '<span class="su" style="color:var(--accent2);">' + (fx.length ? '固定 ' + fx.join('・') : '') + '</span></div>';
     }).join('');
@@ -1285,11 +1315,22 @@ document.getElementById('set-edit-btn').addEventListener('click', function(){
     editItems = JSON.parse(JSON.stringify(APPCFG.items));
     editCoef = JSON.parse(JSON.stringify(APPCFG.coef || []));
     editHamCoef = (APPCFG.hamCoef != null) ? APPCFG.hamCoef : 2.5;
+    editDays = receiptDays().slice();
     setEditing = true;
   } else { readEditInputs(); setEditing = false; }
   renderSettings();
 });
-document.getElementById('set-add').addEventListener('click', function(){ readEditInputs(); editItems.push({ name:'', unit:'袋', tue:'', thu:'' }); renderSettings(); });
+document.getElementById('set-add').addEventListener('click', function(){ readEditInputs(); editItems.push({ name:'', unit:'袋', q:{} }); renderSettings(); });
+document.getElementById('set-days').addEventListener('click', function(e){
+  const b = e.target.closest('.daybtn'); if (!b || !setEditing) return;
+  readEditInputs();
+  const d = parseInt(b.getAttribute('data-d'), 10);
+  const idx = editDays.indexOf(d);
+  if (idx >= 0) { if (editDays.length > 1) editDays.splice(idx, 1); }   // 最低1曜日は残す
+  else editDays.push(d);
+  editDays.sort(function(x, y){ return x - y; });
+  renderSettings();
+});
 document.getElementById('set-items').addEventListener('click', function(e){
   const up = e.target.closest('.si-up'), dn = e.target.closest('.si-down'), del = e.target.closest('.si-del');
   if (!up && !dn && !del) return;
@@ -1317,14 +1358,15 @@ document.getElementById('set-confirm-yes').addEventListener('click', function(){
   if (setEditing) readEditInputs();
   const fee = parseFloat(document.getElementById('set-fee').value) || 3500;
   const items = (setEditing ? editItems : APPCFG.items)
-    .map(function(it){ return { name:(it.name || '').trim(), unit:(it.unit || '').trim(), tue:it.tue, thu:it.thu }; })
+    .map(function(it){ const q = {}; if (it.q) Object.keys(it.q).forEach(function(k){ if (it.q[k] != null && it.q[k] !== '') q[k] = it.q[k]; }); return { name:(it.name || '').trim(), unit:(it.unit || '').trim(), q:q }; })
     .filter(function(it){ return it.name !== ''; });
   const coef = (setEditing ? editCoef : APPCFG.coef)
     .map(function(c){ return { name:(c.name || '').trim(), k: (parseFloat(c.k) || 0) }; })
     .filter(function(c){ return c.name !== '' && c.k > 0; });
   let hamCoef = (APPCFG.hamCoef != null) ? APPCFG.hamCoef : 2.5;
   if (setEditing && editHamCoef !== '' && editHamCoef != null && !isNaN(editHamCoef) && editHamCoef > 0) hamCoef = editHamCoef;
-  APPCFG = { fee: fee, items: items, coef: coef, hamCoef: hamCoef };
+  const days = (setEditing && editDays && editDays.length) ? editDays.slice().sort(function(x,y){ return x - y; }) : receiptDays();
+  APPCFG = { fee: fee, days: days, items: items, coef: coef, hamCoef: hamCoef };
   saveConfig();
   // 記録先スプレッドシート（Webhook URL）を保存
   const wh = document.getElementById('set-webhook').value.trim();
@@ -1356,13 +1398,14 @@ document.getElementById('newlot-btn').addEventListener('click', function(){
 });
 
 // ── 預け連絡文の自動生成＋コピー ──
-function nextReceiptYoubi(){
-  // 入力日の「次の火曜or木曜」（火木受取）
-  const names = ['日','月','火','水','木','金','土'];
+function nextReceiptDayNum(){
+  // 入力日から見て「次に来る受取曜日」の曜日番号（設定で選んだ曜日の中から）
+  const days = receiptDays();
   const wd = new Date().getDay();
-  for (let i = 1; i <= 7; i++){ const w = (wd + i) % 7; if (w === 2 || w === 4) return names[w]; }
-  return '';
+  for (let i = 1; i <= 7; i++){ const w = (wd + i) % 7; if (days.indexOf(w) >= 0) return w; }
+  return days.length ? days[0] : null;
 }
+function nextReceiptYoubi(){ const n = nextReceiptDayNum(); return n != null ? DOW[n] : ''; }
 function buildMessage(){
   const totN = document.getElementById('heads').value || '0';
   const totW = document.getElementById('branch').value || '';
