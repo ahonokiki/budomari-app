@@ -4,120 +4,175 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>アイテム宣伝画像メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@900&family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@900&family=Kiwi+Maru:wght@500&family=Dela+Gothic+One&family=Hachi+Maru+Pop&display=swap" rel="stylesheet">
 <style>
-  body{margin:0;padding:16px;font-family:sans-serif;background:#fff5f8;color:#333}
+  body{margin:0;padding:16px;font-family:sans-serif;background:#fff5f8;color:#333;max-width:600px}
   h1{font-size:18px;margin:0 0 12px}
   .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
   label{font-size:14px}
   input[type=number]{width:70px}
-  canvas{width:100%;max-width:560px;border-radius:8px;box-shadow:0 2px 10px #0002;display:block;margin-top:12px}
+  canvas{width:100%;border-radius:8px;box-shadow:0 2px 10px #0002;display:block;margin-top:12px}
   button{background:#ff4fa3;color:#fff;border:0;border-radius:20px;padding:10px 18px;font-size:15px}
-  details{margin-top:8px;font-size:13px}
+  fieldset{border:1px solid #f3c;border-radius:8px;margin:8px 0;font-size:13px}
+  .note{font-size:12px;color:#666}
 </style>
 </head>
 <body>
 <h1>アイテム宣伝画像メーカー</h1>
 <div class="row"><label>背景画像 <input type="file" id="bg" accept="image/*"></label></div>
 <div class="row"><label>アイテムのスクショ <input type="file" id="shot" accept="image/*"></label></div>
-<div class="row"><label>個数 ×<input type="number" id="count" value="3" min="1"></label>
-  <label><input type="checkbox" id="showCount" checked>表示</label></div>
-<details><summary>切り抜き範囲（スクショ幅に対する割合 %）</summary>
+<div class="note">スクショは貼り付け(Ctrl+V)・ドラッグ&ドロップでもOK。設定と背景は次回も記憶されます。</div>
+
+<fieldset><legend>×数字</legend>
   <div class="row">
-    <label>左 <input type="number" id="cl" value="0" step="0.5"></label>
-    <label>右 <input type="number" id="cr" value="100" step="0.5"></label>
-    <label>上 <input type="number" id="ct" value="48.5" step="0.5"></label>
-    <label>下 <input type="number" id="cb" value="155" step="0.5"></label>
+    <label>所持数 <input type="number" id="owned" value="4" min="1"></label>
+    <label><input type="checkbox" id="manual">手動で指定</label>
+    <label>× <input type="number" id="count" value="3" min="0" disabled></label>
+    <label><input type="checkbox" id="showCount" checked>表示</label>
   </div>
-  <div style="font-size:12px">※上下もスクショの「幅」基準の%。標準はアイテム画像上端〜「所持数」行まで。</div>
-</details>
-<div style="font-size:12px">スクショは貼り付け(Ctrl+V)やドラッグ&ドロップでもOK。背景と切り抜き設定は次回も記憶されます。</div>
+  <div class="row"><label>書体
+    <select id="font">
+      <option value="A">A: まるっとポップ（M PLUS Rounded 極太）</option>
+      <option value="B">B: もちもち（Mochiy Pop One）</option>
+      <option value="C">C: やさしい丸（Zen Maru Gothic 極太）</option>
+      <option value="D">D: ぽってり（Dela Gothic One）</option>
+      <option value="E">E: 手書き風（Hachi Maru Pop）</option>
+      <option value="F">F: ふんわり（Kiwi Maru）</option>
+    </select></label></div>
+  <div class="note">×の数は「所持数−1」で自動計算。変えたいときは「手動で指定」。</div>
+</fieldset>
+
+<fieldset><legend>フチの色</legend>
+  <div class="row">
+    <label><input type="radio" name="edge" value="auto" checked>背景から自動</label>
+    <label><input type="radio" name="edge" value="manual">指定 <input type="color" id="edgeColor" value="#ff5fc8"></label>
+  </div>
+</fieldset>
+
+<fieldset><legend>切り抜き（スクショ幅を100とした値・正方形）</legend>
+  <div class="row">
+    <label>上端 <input type="number" id="ct" value="54" step="0.5"></label>
+    <label>一辺 <input type="number" id="cs" value="100" step="0.5" max="100"></label>
+  </div>
+  <div class="note">標準はアイテムの上〜「所持数」の行まで。左右は自動で中央。元画像のピクセルを切り抜いて縦横同倍率で拡大するだけで、描き直し・補正はしません。</div>
+</fieldset>
+
 <canvas id="cv" width="1254" height="1254"></canvas>
 <div class="row" style="margin-top:12px"><button id="dl">画像を保存</button></div>
 
 <script>
 const S = 1254;
+// アイテム画像の位置・サイズは常に固定（正方形）
+const BOX = {x:152, y:152, size:950};
+const R = 48;        // 四隅の丸み（アイテム画像とフチで共通）
+const EDGE = 10;     // フチの太さ（常に同じ）
+const FONTS = {
+  A:'900 290px "M PLUS Rounded 1c"',
+  B:'290px "Mochiy Pop One"',
+  C:'900 300px "Zen Maru Gothic"',
+  D:'280px "Dela Gothic One"',
+  E:'310px "Hachi Maru Pop"',
+  F:'500 300px "Kiwi Maru"',
+};
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-let bgImg = null, shotImg = null;
 const $ = id => document.getElementById(id);
+let bgImg = null, shotImg = null, autoEdge = '#ff5fc8';
 
-function load(input, cb){
-  input.addEventListener('change', () => {
-    const f = input.files[0]; if (!f) return;
-    const img = new Image();
-    img.onload = () => { cb(img); draw(); };
-    img.src = URL.createObjectURL(f);
-  });
+const store = {get:k=>{try{return localStorage.getItem('promo_'+k)}catch(e){return null}},
+               set:(k,v)=>{try{localStorage.setItem('promo_'+k,v)}catch(e){}}};
+
+// 設定の記憶
+['owned','count','ct','cs','font','edgeColor'].forEach(id=>{
+  const v = store.get(id); if (v!==null) $(id).value = v;
+  $(id).addEventListener('input',()=>{ store.set(id,$(id).value); draw(); });
+});
+if (store.get('manual')==='1') $('manual').checked = true;
+if (store.get('edge')==='manual') document.querySelector('input[name=edge][value=manual]').checked = true;
+$('manual').addEventListener('change',()=>{ store.set('manual',$('manual').checked?'1':'0'); draw(); });
+$('showCount').addEventListener('change',draw);
+document.querySelectorAll('input[name=edge]').forEach(r=>r.addEventListener('change',()=>{ store.set('edge',r.value); draw(); }));
+
+function fromFile(f, cb){ const i=new Image(); i.onload=()=>{cb(i);draw();}; i.src=URL.createObjectURL(f); }
+$('bg').addEventListener('change',()=>{ const f=$('bg').files[0]; if(f) fromFile(f,setBg); });
+$('shot').addEventListener('change',()=>{ const f=$('shot').files[0]; if(f) fromFile(f,i=>shotImg=i); });
+function setBg(i, save=true){
+  bgImg = i; autoEdge = pickEdgeColor(i);
+  if (save){ try{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height;
+    c.getContext('2d').drawImage(i,0,0); store.set('bg', c.toDataURL('image/jpeg',0.92)); }catch(e){} }
 }
-load($('bg'), i => { bgImg = i; try{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); localStorage.setItem('promoBg', c.toDataURL('image/png')); }catch(e){} });
-// 前回の背景を自動で復元
-try{ const d=localStorage.getItem('promoBg'); if(d){ const i=new Image(); i.onload=()=>{bgImg=i;draw();}; i.src=d; } }catch(e){}
-// 切り抜き設定・個数を記憶
-['count','cl','cr','ct','cb'].forEach(id=>{ try{ const v=localStorage.getItem('promo_'+id); if(v!==null) $(id).value=v; }catch(e){} $(id).addEventListener('change',()=>{ try{localStorage.setItem('promo_'+id,$(id).value);}catch(e){} }); });
-// スクショは貼り付け(Ctrl+V)・ドラッグ&ドロップでも読み込み
-function setShot(f){ const i=new Image(); i.onload=()=>{shotImg=i;draw();}; i.src=URL.createObjectURL(f); }
-document.addEventListener('paste',e=>{ const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/')); if(f) setShot(f); });
+{ const d = store.get('bg'); if (d){ const i=new Image(); i.onload=()=>{setBg(i,false);draw();}; i.src=d; } }
+document.addEventListener('paste',e=>{ const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/')); if(f) fromFile(f,i=>shotImg=i); });
 document.addEventListener('dragover',e=>e.preventDefault());
-document.addEventListener('drop',e=>{ e.preventDefault(); const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/')); if(f) setShot(f); });
-load($('shot'), i => shotImg = i);
-['count','showCount','cl','cr','ct','cb'].forEach(id => $(id).addEventListener('input', draw));
+document.addEventListener('drop',e=>{ e.preventDefault(); const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/')); if(f) fromFile(f,i=>shotImg=i); });
+
+// 背景の平均的な色相から、同系色の蛍光色を作る
+function pickEdgeColor(img){
+  const c=document.createElement('canvas'); c.width=c.height=32;
+  const g=c.getContext('2d'); g.drawImage(img,0,0,32,32);
+  const d=g.getImageData(0,0,32,32).data; let x=0,y=0;
+  for (let i=0;i<d.length;i+=4){
+    const [h,s,l]=hsl(d[i],d[i+1],d[i+2]); const w=s*(1-Math.abs(2*l-1));
+    x+=Math.cos(h*2*Math.PI)*w; y+=Math.sin(h*2*Math.PI)*w;
+  }
+  const h=((Math.atan2(y,x)/(2*Math.PI))+1)%1;
+  return `hsl(${Math.round(h*360)},100%,68%)`;
+}
+function hsl(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;
+  if(mx===mn) return [0,0,l]; const d=mx-mn, s=l>.5?d/(2-mx-mn):d/(mx+mn);
+  const h = mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4); return [h/6,s,l]; }
 
 function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+function countValue(){
+  if ($('manual').checked){ $('count').disabled=false; return $('count').value; }
+  $('count').disabled=true; const n=Math.max(0,($('owned').value|0)-1); $('count').value=n; return n;
+}
 
 function draw(){
   ctx.clearRect(0,0,S,S);
-  if (bgImg){ // cover
-    const k = Math.max(S/bgImg.width, S/bgImg.height);
-    const w = bgImg.width*k, h = bgImg.height*k;
-    ctx.drawImage(bgImg,(S-w)/2,(S-h)/2,w,h);
-  } else { ctx.fillStyle='#ff7aa8'; ctx.fillRect(0,0,S,S); }
+  if (bgImg){ const k=Math.max(S/bgImg.width,S/bgImg.height), w=bgImg.width*k, h=bgImg.height*k;
+    ctx.drawImage(bgImg,(S-w)/2,(S-h)/2,w,h); }
+  else { ctx.fillStyle='#ff7aa8'; ctx.fillRect(0,0,S,S); }
 
-  // フレーム
-  const F = {x:120, y:118, w:1014, h:1030, r:34};
-  ctx.save();
-  ctx.shadowColor = '#ff3fb4'; ctx.shadowBlur = 40;
-  ctx.lineWidth = 14; ctx.strokeStyle = '#ff9ad5';
-  rr(F.x,F.y,F.w,F.h,F.r); ctx.stroke();
-  ctx.restore();
-  ctx.fillStyle = '#fff'; rr(F.x,F.y,F.w,F.h,F.r); ctx.fill();
+  const edge = document.querySelector('input[name=edge]:checked').value==='auto' ? autoEdge : $('edgeColor').value;
+  const {x,y,size} = BOX;
 
-  // スクショ切り抜き
+  // アイテム画像（正方形切り抜き・縦横同倍率・ピクセルはそのまま）
+  ctx.save(); rr(x,y,size,size,R); ctx.clip();
+  ctx.fillStyle='#fff'; ctx.fillRect(x,y,size,size);
   if (shotImg){
-    const W = shotImg.width;
-    const sx = W*$('cl').value/100, sw = W*($('cr').value-$('cl').value)/100;
-    const sy = W*$('ct').value/100, sh = W*($('cb').value-$('ct').value)/100;
-    const pad = 10, bw = F.w-pad*2, bh = F.h-pad*2;
-    const k = Math.min(bw/sw, bh/sh); // 縦横比は固定
-    const dw = sw*k, dh = sh*k;
-    // 元画像のピクセルを切り抜いて縦横同倍率で拡大するだけ（描き直し・色補正などは一切しない）
-    ctx.imageSmoothingQuality = 'high';
-    ctx.save(); rr(F.x+pad,F.y+pad,bw,bh,F.r-8); ctx.clip();
-    ctx.drawImage(shotImg,sx,sy,sw,sh,F.x+(F.w-dw)/2,F.y+pad+(bh-dh)/2,dw,dh);
-    ctx.restore();
+    const W=shotImg.width, side=Math.min(W*$('cs').value/100, W), top=W*$('ct').value/100;
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(shotImg,(W-side)/2,top,side,side,x,y,size,size);
   }
-  ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; rr(F.x,F.y,F.w,F.h,F.r); ctx.stroke();
+  ctx.restore();
 
-  // ×N
+  // 蛍光フチ（外側・一定の太さ・同じ丸み）
+  ctx.save();
+  ctx.shadowColor=edge; ctx.shadowBlur=28;
+  ctx.lineWidth=EDGE; ctx.strokeStyle=edge;
+  rr(x-EDGE/2,y-EDGE/2,size+EDGE,size+EDGE,R+EDGE/2); ctx.stroke();
+  ctx.shadowBlur=0; ctx.lineWidth=3; ctx.strokeStyle='#fff';
+  rr(x-EDGE/2,y-EDGE/2,size+EDGE,size+EDGE,R+EDGE/2); ctx.stroke();
+  ctx.restore();
+
+  // ×数字
   if ($('showCount').checked){
-    const t = '×' + $('count').value;
-    ctx.save();
-    ctx.font = '900 250px "Arial Rounded MT Bold","Hiragino Maru Gothic ProN",sans-serif';
-    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-    const x = 1215, y = 330;
-    ctx.lineJoin = 'round';
-    ctx.shadowColor = '#ff2fa0'; ctx.shadowBlur = 30;
-    ctx.lineWidth = 44; ctx.strokeStyle = '#fff'; ctx.strokeText(t,x,y);
-    ctx.shadowBlur = 0;
-    const g = ctx.createLinearGradient(0,y-220,0,y);
-    g.addColorStop(0,'#ff8fd0'); g.addColorStop(1,'#ff2e9a');
-    ctx.fillStyle = g; ctx.fillText(t,x,y);
-    ctx.restore();
-  }
+    const t='×'+countValue();
+    ctx.save(); ctx.font=FONTS[$('font').value]||FONTS.A;
+    ctx.textAlign='right'; ctx.textBaseline='alphabetic'; ctx.lineJoin='round';
+    const tx=S-30, ty=340;
+    ctx.shadowColor=edge; ctx.shadowBlur=30;
+    ctx.lineWidth=46; ctx.strokeStyle='#fff'; ctx.strokeText(t,tx,ty);
+    ctx.shadowBlur=0;
+    const g=ctx.createLinearGradient(0,ty-240,0,ty);
+    g.addColorStop(0,'#ff9ad6'); g.addColorStop(1,'#ff2e9a');
+    ctx.fillStyle=g; ctx.fillText(t,tx,ty); ctx.restore();
+  } else countValue();
 }
-$('dl').onclick = () => {
-  const a = document.createElement('a');
-  a.download = 'item-promo-' + Date.now() + '.png'; a.href = cv.toDataURL('image/png'); a.click();
-};
+$('dl').onclick=()=>{ const a=document.createElement('a'); a.download='item-promo-'+Date.now()+'.png'; a.href=cv.toDataURL('image/png'); a.click(); };
 draw();
+Promise.all(Object.values(FONTS).map(f=>document.fonts.load(f,"×0123456789").catch(()=>{}))).then(draw);
 </script>
 </body>
 </html>
