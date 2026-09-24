@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ポケツイ画像加工アプリ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@900&family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@900&family=Kiwi+Maru:wght@500&family=Dela+Gothic+One&family=Hachi+Maru+Pop&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@900&family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@900&family=Kiwi+Maru:wght@500&family=Dela+Gothic+One&family=Hachi+Maru+Pop&family=Fredoka:wght@700&family=Baloo+2:wght@800&family=Nunito:wght@1000&family=Titan+One&family=Sniglet:wght@800&family=Paytone+One&display=swap" rel="stylesheet">
 <style>
   body{margin:0;padding:16px;font-family:sans-serif;background:#fff5f8;color:#333;max-width:600px}
   h1{font-size:18px;margin:0 0 12px}
@@ -51,6 +51,12 @@
       <option value="D">D: ぽってり（Dela Gothic One）</option>
       <option value="E">E: 手書き風（Hachi Maru Pop）</option>
       <option value="F">F: ふんわり（Kiwi Maru）</option>
+      <option value="G">G: ころころ（Fredoka）</option>
+      <option value="H">H: ぷっくり（Baloo 2）※見本に近い</option>
+      <option value="I">I: まんまる（Nunito Black）※見本に近い</option>
+      <option value="J">J: どっしり（Titan One）</option>
+      <option value="K">K: もこもこ（Sniglet）</option>
+      <option value="L">L: ぽこぽこ（Paytone One）</option>
     </select></label></div>
   <div class="note">×の数は「所持数−1」で自動計算。変えたいときは「手動で指定」。</div>
 </fieldset>
@@ -85,6 +91,12 @@ const FONTS = {
   D:'280px "Dela Gothic One"',
   E:'310px "Hachi Maru Pop"',
   F:'500 300px "Kiwi Maru"',
+  G:'700 300px "Fredoka"',
+  H:'800 330px "Baloo 2"',
+  I:'1000 300px "Nunito"',
+  J:'270px "Titan One"',
+  K:'800 300px "Sniglet"',
+  L:'270px "Paytone One"',
 };
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
@@ -220,8 +232,10 @@ function draw(){
   if ($('showCount').checked){
     const num=String(countValue());
     const base=FONTS[$('font').value]||FONTS.B;
-    const px=parseFloat(base.match(/(\d+)px/)[1]);
-    const fNum=base, fX=base.replace(/\d+px/, Math.round(px*0.66)+'px');
+    // 書体ごとの大きさの違いをならす：数字の高さが見本と同じ(約205px)になるよう自動調整
+    const mm=document.createElement('canvas').getContext('2d'); mm.font=base.replace(/\d+px/,'100px');
+    const px=Math.round(100*205/Math.max(1,mm.measureText('3').actualBoundingBoxAscent));
+    const fNum=base.replace(/\d+px/, px+'px'), fX=base.replace(/\d+px/, Math.round(px*0.66)+'px');
     const RIGHT=1194, BASE=262, GAP=18, FAT=16, OUT=36+16, XUP=26, GLOW=edge, SX=1.08;
     const m=document.createElement('canvas').getContext('2d');
     m.font=fNum; const wN=m.measureText(num).width*SX;
@@ -248,7 +262,7 @@ function draw(){
   } else countValue();
 }
 selectSet(cur || sets[0]?.id);
-$('dl').onclick=()=>{ const a=document.createElement('a'); a.download='item-promo-'+Date.now()+'.png'; a.href=cv.toDataURL('image/png'); a.click(); };
+$('dl').onclick=()=>{ const a=document.createElement('a'); a.download='poketsui-'+Date.now()+'.png'; a.href=cv.toDataURL('image/png'); a.click(); };
 draw();
 Promise.all(Object.values(FONTS).map(f=>document.fonts.load(f,"×0123456789").catch(()=>{}))).then(draw);
 </script>
