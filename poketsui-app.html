@@ -7,43 +7,74 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@900&family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@900&family=Kiwi+Maru:wght@500&family=Dela+Gothic+One&family=Hachi+Maru+Pop&family=Fredoka:wght@700&family=Baloo+2:wght@800&family=Nunito:wght@1000&family=Titan+One&family=Sniglet:wght@800&family=Paytone+One&display=swap" rel="stylesheet">
 <style>
-  body{margin:0;padding:16px;font-family:sans-serif;background:#fff5f8;color:#333;max-width:600px}
-  h1{font-size:18px;margin:0 0 12px}
-  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
-  label{font-size:14px}
-  input[type=number]{width:70px}
-  canvas{width:100%;border-radius:8px;box-shadow:0 2px 10px #0002;display:block;margin-top:12px}
-  button{background:#ff4fa3;color:#fff;border:0;border-radius:20px;padding:10px 18px;font-size:15px}
-  fieldset{border:1px solid #f3c;border-radius:8px;margin:8px 0;font-size:13px}
-  .sw{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:2px solid #eee;border-radius:10px;padding:4px 6px;font-size:11px;color:#333;cursor:pointer}
-  .sw.on{border-color:#ff4fa3}
-  .sw i{width:34px;height:34px;border-radius:50%;box-shadow:0 0 8px currentColor}
-  .set{position:relative;width:64px;height:64px;border-radius:12px;border:3px solid #eee;background-size:cover;background-position:center;cursor:pointer;padding:0}
-  .set.on{border-color:#ff4fa3}
-  .set b{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;border:2px solid #fff}
-  .set .del{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#999;color:#fff;font-size:12px;line-height:20px;text-align:center}
-  .addbtn{background:#fff;border:2px dashed #ff9ad5;border-radius:12px;padding:8px 12px;cursor:pointer;color:#ff4fa3}
-  .note{font-size:12px;color:#666}
+  :root{--pink:#ff6fae;--pink2:#ff9cc8;--lav:#a98be0;--lav2:#7f63c9;--ink:#5a4a5e;--sub:#9a8a9e;--line:#f6d6e6;--green1:#8fe8b9;--green2:#4fd08f}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;color:var(--ink);
+    background:#fff0f6 radial-gradient(circle at 10px 10px,#ffe0ee 3px,transparent 4px) 0 0/22px 22px;min-height:100vh}
+  header{background:linear-gradient(135deg,#9d86d8,#c38fd8 55%,#f59ac8);color:#fff;
+    text-align:center;padding:14px 16px 12px;font-size:18px;font-weight:900;letter-spacing:.06em;box-shadow:0 3px 10px #b07ad044;border-radius:0 0 22px 22px}
+  header small{display:block;font-size:11px;font-weight:700;opacity:.9;letter-spacing:0}
+  main{max-width:560px;margin:0 auto;padding:14px 16px 110px}
+  .preview{background:#fff;border-radius:26px;padding:10px;box-shadow:0 6px 18px #ff8fc033;border:3px solid #fff}
+  canvas{width:100%;border-radius:18px;display:block}
+  .card{background:#fff;border-radius:22px;margin:14px 0;box-shadow:0 4px 14px #e7a3c833;overflow:hidden}
+  .card h2{margin:0;font-size:14px;font-weight:900;color:#fff;padding:9px 16px;background:linear-gradient(90deg,var(--pink),var(--pink2));display:flex;align-items:center;gap:6px}
+  .card h2::before{content:"♡";font-size:13px}
+  .card .in{padding:12px 16px 14px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0}
+  label{font-size:14px;font-weight:700}
+  input[type=number]{width:74px;border:2px solid var(--line);border-radius:14px;padding:7px 10px;font:inherit;color:var(--ink);background:#fffafd;text-align:center}
+  input[type=number]:disabled{opacity:.55}
+  select{width:100%;border:2px solid var(--line);border-radius:16px;padding:10px 12px;font:inherit;font-weight:700;color:var(--ink);background:#fffafd}
+  input[type=checkbox]{accent-color:var(--pink);width:18px;height:18px;vertical-align:-3px}
+  input[type=color]{width:44px;height:34px;border:2px solid var(--line);border-radius:12px;padding:2px;background:#fff}
+  .note{font-size:11.5px;color:var(--sub);line-height:1.6;margin-top:6px}
+  .pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;padding:12px 20px;font:inherit;font-weight:900;font-size:15px;color:#fff;cursor:pointer;
+    background:linear-gradient(180deg,#ff9fcb,var(--pink));box-shadow:0 4px 0 #e0579a,0 6px 12px #ff6fae44}
+  .pill:active{transform:translateY(3px);box-shadow:0 1px 0 #e0579a}
+  .pill.lav{background:linear-gradient(180deg,#c3b0f0,var(--lav));box-shadow:0 4px 0 var(--lav2),0 6px 12px #a98be044}
+  .pill.wide{width:100%}
+  .sw{display:flex;flex-direction:column;align-items:center;gap:3px;background:#fff;border:3px solid #f3eef5;border-radius:16px;padding:6px 8px;font:inherit;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer}
+  .sw.on{border-color:var(--pink);background:#fff3f9}
+  .sw i{width:34px;height:34px;border-radius:50%;box-shadow:0 0 10px currentColor;border:2px solid #fff}
+  .set{position:relative;width:66px;height:66px;border-radius:18px;border:3px solid #fff;background-size:cover;background-position:center;cursor:pointer;padding:0;box-shadow:0 2px 8px #0002}
+  .set.on{outline:3px solid var(--pink);outline-offset:2px}
+  .set b{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;border:3px solid #fff}
+  .set .del{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#c9b8cf;color:#fff;font-size:12px;line-height:22px;text-align:center;border:2px solid #fff}
+  .addbtn{width:66px;height:66px;display:flex;align-items:center;justify-content:center;flex-direction:column;border:3px dashed var(--pink2);border-radius:18px;cursor:pointer;color:var(--pink);font-size:24px;font-weight:900;background:#fff7fb;line-height:1}
+  .addbtn span{font-size:10px}
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:#ffffffe8;backdrop-filter:blur(8px);border-top:2px solid #fde3ef}
+  .bar .inner{max-width:560px;margin:0 auto;display:flex;gap:10px}
+  .save{flex:1;background:linear-gradient(180deg,var(--green1),var(--green2));box-shadow:0 4px 0 #36a872,0 6px 12px #4fd08f55}
+  .save:active{box-shadow:0 1px 0 #36a872}
 </style>
 </head>
 <body>
-<h1>ポケツイ画像加工アプリ</h1>
-<fieldset><legend>背景セット（背景＋フチ色）</legend>
-  <div class="row" id="sets"></div>
-  <div class="row"><label class="addbtn">＋ 新しい背景を追加<input type="file" id="bg" accept="image/*" hidden></label></div>
-  <div class="note">背景ごとにフチ色をセットで保存します。セットを選ぶと、その背景とフチ色がそのまま使われます。</div>
-</fieldset>
-<div class="row"><label>アイテムのスクショ <input type="file" id="shot" accept="image/*"></label></div>
-<div class="note">スクショは貼り付け(Ctrl+V)・ドラッグ&ドロップでもOK。</div>
+<header>ポケツイ画像加工アプリ<small>☆ アイテム宣伝画像をかんたん作成 ☆</small></header>
+<main>
+<div class="preview"><canvas id="cv" width="1254" height="1254"></canvas></div>
 
-<fieldset><legend>×数字</legend>
+<section class="card"><h2>背景セット</h2><div class="in">
+  <div class="row" id="setsWrap"><span id="sets" class="row" style="margin:0"></span>
+    <label class="addbtn">＋<span>背景追加</span><input type="file" id="bg" accept="image/*" hidden></label></div>
+  <div class="note">背景ごとにフチ色をセットで保存。タップで切り替え、×で削除できます。</div>
+</div></section>
+
+<section class="card"><h2>アイテム画像</h2><div class="in">
+  <label class="pill lav wide">📷 スクショを選ぶ<input type="file" id="shot" accept="image/*" hidden></label>
+  <div class="note">パソコンでは貼り付け(Ctrl+V)・ドラッグ&ドロップでもOK。</div>
+</div></section>
+
+<section class="card"><h2>×数字</h2><div class="in">
   <div class="row">
     <label>所持数 <input type="number" id="owned" value="4" min="1"></label>
-    <label><input type="checkbox" id="manual">手動で指定</label>
     <label>× <input type="number" id="count" value="3" min="0" disabled></label>
-    <label><input type="checkbox" id="showCount" checked>表示</label>
   </div>
-  <div class="row"><label>書体
+  <div class="row">
+    <label><input type="checkbox" id="manual"> 数を手動で指定</label>
+    <label><input type="checkbox" id="showCount" checked> 表示する</label>
+  </div>
+  <div class="row"><label style="width:100%">書体
     <select id="font">
       <option value="B" selected>B: もちもち（Mochiy Pop One）</option>
       <option value="A">A: まるっとポップ（M PLUS Rounded 極太）</option>
@@ -58,25 +89,25 @@
       <option value="K">K: もこもこ（Sniglet）</option>
       <option value="L">L: ぽこぽこ（Paytone One）</option>
     </select></label></div>
-  <div class="note">×の数は「所持数−1」で自動計算。変えたいときは「手動で指定」。</div>
-</fieldset>
+  <div class="note">×の数は「所持数−1」で自動計算されます。</div>
+</div></section>
 
-<fieldset><legend>フチの色（選んでいるセットに保存）</legend>
+<section class="card"><h2>フチの色</h2><div class="in">
   <div class="row" id="swatches"></div>
   <div class="row"><label>自由に指定 <input type="color" id="edgeColor" value="#ec5fd0"></label></div>
-  <div class="note">「おすすめ」は背景から浮き上がる同系色のネオンカラーです。</div>
-</fieldset>
+  <div class="note">「おすすめ」は背景から浮き上がる同系色のネオンカラー。選んだ色は今のセットに保存されます。</div>
+</div></section>
 
-<fieldset><legend>切り抜き（スクショ幅を100とした値・正方形）</legend>
+<section class="card"><h2>切り抜き位置</h2><div class="in">
   <div class="row">
     <label>上端 <input type="number" id="ct" value="54" step="0.5"></label>
     <label>一辺 <input type="number" id="cs" value="100" step="0.5" max="100"></label>
   </div>
-  <div class="note">標準はアイテムの上〜「所持数」の行まで。左右は自動で中央。元画像のピクセルを切り抜いて縦横同倍率で拡大するだけで、描き直し・補正はしません。</div>
-</fieldset>
+  <div class="note">スクショの幅を100とした値（正方形）。元画像のピクセルを切り抜いて同じ比率で拡大するだけで、描き直し・補正はしません。</div>
+</div></section>
+</main>
 
-<canvas id="cv" width="1254" height="1254"></canvas>
-<div class="row" style="margin-top:12px"><button id="dl">画像を保存</button></div>
+<div class="bar"><div class="inner"><button class="pill save" id="dl">🎁 画像を保存</button></div></div>
 
 <script>
 const S = 1254;
