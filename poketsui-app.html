@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ポケツイ画像加工アプリ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@900&family=Kiwi+Maru:wght@500&family=Dela+Gothic+One&family=Hachi+Maru+Pop&family=Fredoka:wght@700&family=Baloo+2:wght@800&family=Nunito:wght@1000&family=Titan+One&family=Sniglet:wght@800&family=Paytone+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Baloo+2:wght@800&family=Nunito:wght@900&family=Fredoka:wght@700&family=Sniglet:wght@800&family=Titan+One&family=Paytone+One&family=DynaPuff:wght@700&family=Coiny&family=Cherry+Bomb+One&family=Rampart+One&family=Rubik+Bubbles&family=Modak&family=Chango&family=Lilita+One&family=Grandstander:wght@900&family=Varela+Round&family=Kosugi+Maru&family=Potta+One&family=Chewy&family=Bubblegum+Sans&family=Luckiest+Guy&family=Rubik:wght@900&family=M+PLUS+Rounded+1c:wght@900&family=Zen+Maru+Gothic:wght@900&family=Hachi+Maru+Pop&family=Yusei+Magic&family=Mochiy+Pop+P+One&family=Rounded+Mplus+1c:wght@800&family=Kiwi+Maru:wght@500&family=Dela+Gothic+One&family=Bowlby+One&family=Carter+One&family=Gluten:wght@900&family=Fuzzy+Bubbles:wght@700&text=%C3%97%200123456789&display=swap" rel="stylesheet">
 <style>
   :root{--pink:#ff6fae;--pink2:#ff9cc8;--lav:#a98be0;--lav2:#7f63c9;--ink:#5a4a5e;--sub:#9a8a9e;--line:#f6d6e6;--green1:#8fe8b9;--green2:#4fd08f}
   *{box-sizing:border-box}
@@ -56,6 +57,11 @@
   .close{position:absolute;right:12px;width:34px;height:34px;border-radius:50%;border:0;background:#ffffff44;color:#fff;font-size:16px;cursor:pointer}
   .set .del{display:none}
   .delBtn{border:0;border-radius:99px;padding:8px 14px;font:inherit;font-weight:900;font-size:13px;color:#fff;background:var(--slot);cursor:pointer}
+  #fontGrid{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:340px;overflow:auto;padding:4px}
+  .fontOpt{display:flex;align-items:center;gap:10px;border:3px solid #f6e4ee;border-radius:18px;background:linear-gradient(135deg,#ff7aa0,#ffb880);padding:6px 10px;cursor:pointer;text-align:left}
+  .fontOpt.on{border-color:#fff;outline:3px solid var(--pink)}
+  .fn{flex:none;width:30px;height:30px;border-radius:50%;background:#fff;color:var(--pink);font-weight:900;font-size:14px;line-height:30px;text-align:center}
+  .fs{font-size:26px;color:#f82da1;white-space:nowrap;overflow:hidden;text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,0 0 8px #e85fd8}
   .save{flex:1;background:linear-gradient(180deg,var(--green1),var(--green2));box-shadow:0 4px 0 #36a872,0 6px 12px #4fd08f55}
   .save:active{box-shadow:0 1px 0 #36a872}
 
@@ -77,6 +83,11 @@
   .card h2::before{content:"♡"} .card h2::after{content:"♡";font-size:13px}
   .card .in{padding:14px 16px 16px}
   .pill.lav{background:linear-gradient(180deg,#d6c6ff,#a98be0);box-shadow:0 5px 0 #8a6bd0,0 8px 14px #a98be044;font-size:16px}
+  #fontGrid{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:340px;overflow:auto;padding:4px}
+  .fontOpt{display:flex;align-items:center;gap:10px;border:3px solid #f6e4ee;border-radius:18px;background:linear-gradient(135deg,#ff7aa0,#ffb880);padding:6px 10px;cursor:pointer;text-align:left}
+  .fontOpt.on{border-color:#fff;outline:3px solid var(--pink)}
+  .fn{flex:none;width:30px;height:30px;border-radius:50%;background:#fff;color:var(--pink);font-weight:900;font-size:14px;line-height:30px;text-align:center}
+  .fs{font-size:26px;color:#f82da1;white-space:nowrap;overflow:hidden;text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,0 0 8px #e85fd8}
   .save{font-size:17px;letter-spacing:.06em;box-shadow:0 5px 0 #36a872,0 8px 14px #4fd08f55}
   .bar{border-top:3px solid #ffd6e8;border-radius:24px 24px 0 0}
   .gear{background:#fff;color:#c38fd8;border:3px solid #ffd6ec;box-shadow:0 3px 0 #c9a3dd}
@@ -112,21 +123,8 @@
 
   <section class="card"><h2>×数字</h2><div class="in">
     <div class="row"><label><input type="checkbox" id="showCount" checked> ×数字を表示する</label></div>
-    <div class="row"><label style="width:100%">書体
-    <select id="font">
-      <option value="B" selected>B: もちもち（Mochiy Pop One）</option>
-      <option value="A">A: まるっとポップ（M PLUS Rounded 極太）</option>
-      <option value="C">C: やさしい丸（Zen Maru Gothic 極太）</option>
-      <option value="D">D: ぽってり（Dela Gothic One）</option>
-      <option value="E">E: 手書き風（Hachi Maru Pop）</option>
-      <option value="F">F: ふんわり（Kiwi Maru）</option>
-      <option value="G">G: ころころ（Fredoka）</option>
-      <option value="H">H: ぷっくり（Baloo 2）※見本に近い</option>
-      <option value="I">I: まんまる（Nunito Black）※見本に近い</option>
-      <option value="J">J: どっしり（Titan One）</option>
-      <option value="K">K: もこもこ（Sniglet）</option>
-      <option value="L">L: ぽこぽこ（Paytone One）</option>
-    </select></label></div>
+    <div class="row"><div style="width:100%"><b style="color:#8a5a86;font-size:14px">数字の書体（タップで選択）</b>
+<input type="hidden" id="font" value="12"><div id="fontGrid"></div></div></div>
   </div></section>
 
   <section class="card"><h2>フチの色</h2><div class="in">
@@ -162,20 +160,8 @@ const S = 1254;
 const BOX = {x:127, y:128, size:1000};
 const R = 44;        // 四隅の丸み（アイテム画像とフチで共通）
 const EDGE_IN = 6, EDGE_CORE = 8; // フチ：内側ピンク6px＋白い芯8px＋外側の光（常に同じ太さ）
-const FONTS = {
-  A:'900 290px "M PLUS Rounded 1c"',
-  B:'272px "Mochiy Pop One"',
-  C:'900 300px "Zen Maru Gothic"',
-  D:'280px "Dela Gothic One"',
-  E:'310px "Hachi Maru Pop"',
-  F:'500 300px "Kiwi Maru"',
-  G:'700 300px "Fredoka"',
-  H:'800 330px "Baloo 2"',
-  I:'1000 300px "Nunito"',
-  J:'270px "Titan One"',
-  K:'800 300px "Sniglet"',
-  L:'270px "Paytone One"',
-};
+const FONT_LIST = [["Mochiy Pop One", "400"], ["Baloo 2", "800"], ["Nunito", "900"], ["Fredoka", "700"], ["Sniglet", "800"], ["Titan One", "400"], ["Paytone One", "400"], ["DynaPuff", "700"], ["Coiny", "400"], ["Cherry Bomb One", "400"], ["Rampart One", "400"], ["Rubik Bubbles", "400"], ["Modak", "400"], ["Chango", "400"], ["Lilita One", "400"], ["Grandstander", "900"], ["Varela Round", "400"], ["Kosugi Maru", "400"], ["Potta One", "400"], ["Chewy", "400"], ["Bubblegum Sans", "400"], ["Luckiest Guy", "400"], ["Rubik", "900"], ["M PLUS Rounded 1c", "900"], ["Zen Maru Gothic", "900"], ["Hachi Maru Pop", "400"], ["Yusei Magic", "400"], ["Mochiy Pop P One", "400"], ["Rounded Mplus 1c", "800"], ["Kiwi Maru", "500"], ["Dela Gothic One", "400"], ["Bowlby One", "400"], ["Carter One", "400"], ["Gluten", "900"], ["Fuzzy Bubbles", "700"]];
+const FONTS = {}; FONT_LIST.forEach(([f,w],i)=>FONTS[i+1]=`${w} 300px "${f}"`);
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 let bgImg = null, shotImg = null;
@@ -184,12 +170,18 @@ const store = {get:k=>{try{return localStorage.getItem('promo_'+k)}catch(e){retu
                set:(k,v)=>{try{localStorage.setItem('promo_'+k,v)}catch(e){}}};
 
 // 設定の記憶
+if (!FONTS[store.get('font')]) store.set('font','12');
 ['owned','ct','cs','font'].forEach(id=>{
   const v = store.get(id); if (v!==null) $(id).value = v;
   $(id).addEventListener('input',()=>{ store.set(id,$(id).value); draw(); });
 });
 $('count').addEventListener('input',draw);
-$('openSet').onclick=()=>{ $('settings').hidden=false;  };
+function renderFonts(){ const g=$('fontGrid'); g.innerHTML='';
+  FONT_LIST.forEach(([f,w],i)=>{ const n=i+1, b=document.createElement('button'); b.type='button'; b.className='fontOpt'+(String(n)===$('font').value?' on':'');
+    b.innerHTML=`<span class="fn">${n}</span><span class="fs" style="font-family:'${f}',sans-serif;font-weight:${w}">×1 2 3 4 5 6 7 8 9 10</span>`;
+    b.onclick=()=>{ $('font').value=n; store.set('font',n); renderFonts(); draw(); }; g.appendChild(b); }); }
+renderFonts();
+$('openSet').onclick=()=>{ $('settings').hidden=false; document.querySelector('.fontOpt.on')?.scrollIntoView({block:'nearest'});  };
 const closeSet=()=>{ $('settings').hidden=true;  };
 $('closeSet').onclick=closeSet; $('settings').addEventListener('click',e=>{ if(e.target.id==='settings') closeSet(); });
 $('showCount').addEventListener('change',draw);
@@ -324,7 +316,7 @@ function draw(){
   // ×数字（ぷっくり濃ピンク＋太い白フチ＋外側のマゼンタの光）。×は数字より小さめ
   if ($('showCount').checked){
     const num=String(countValue());
-    const base=FONTS[$('font').value]||FONTS.B;
+    const base=FONTS[$('font').value]||FONTS[12];
     // 書体ごとの大きさの違いをならす：数字の高さが見本と同じ(約205px)になるよう自動調整
     const mm=document.createElement('canvas').getContext('2d'); mm.font=base.replace(/\d+px/,'100px');
     const px=Math.round(100*205/Math.max(1,mm.measureText('3').actualBoundingBoxAscent));
