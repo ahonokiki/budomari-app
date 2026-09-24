@@ -18,14 +18,23 @@
   .sw{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:2px solid #eee;border-radius:10px;padding:4px 6px;font-size:11px;color:#333;cursor:pointer}
   .sw.on{border-color:#ff4fa3}
   .sw i{width:34px;height:34px;border-radius:50%;box-shadow:0 0 8px currentColor}
+  .set{position:relative;width:64px;height:64px;border-radius:12px;border:3px solid #eee;background-size:cover;background-position:center;cursor:pointer;padding:0}
+  .set.on{border-color:#ff4fa3}
+  .set b{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;border:2px solid #fff}
+  .set .del{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#999;color:#fff;font-size:12px;line-height:20px;text-align:center}
+  .addbtn{background:#fff;border:2px dashed #ff9ad5;border-radius:12px;padding:8px 12px;cursor:pointer;color:#ff4fa3}
   .note{font-size:12px;color:#666}
 </style>
 </head>
 <body>
 <h1>アイテム宣伝画像メーカー</h1>
-<div class="row"><label>背景画像 <input type="file" id="bg" accept="image/*"></label></div>
+<fieldset><legend>背景セット（背景＋フチ色）</legend>
+  <div class="row" id="sets"></div>
+  <div class="row"><label class="addbtn">＋ 新しい背景を追加<input type="file" id="bg" accept="image/*" hidden></label></div>
+  <div class="note">背景ごとにフチ色をセットで保存します。セットを選ぶと、その背景とフチ色がそのまま使われます。</div>
+</fieldset>
 <div class="row"><label>アイテムのスクショ <input type="file" id="shot" accept="image/*"></label></div>
-<div class="note">スクショは貼り付け(Ctrl+V)・ドラッグ&ドロップでもOK。設定と背景は次回も記憶されます。</div>
+<div class="note">スクショは貼り付け(Ctrl+V)・ドラッグ&ドロップでもOK。</div>
 
 <fieldset><legend>×数字</legend>
   <div class="row">
@@ -46,10 +55,10 @@
   <div class="note">×の数は「所持数−1」で自動計算。変えたいときは「手動で指定」。</div>
 </fieldset>
 
-<fieldset><legend>フチの色</legend>
+<fieldset><legend>フチの色（選んでいるセットに保存）</legend>
   <div class="row" id="swatches"></div>
   <div class="row"><label>自由に指定 <input type="color" id="edgeColor" value="#ec5fd0"></label></div>
-  <div class="note" id="edgeMsg">背景を読み込むと、背景から浮き上がるおすすめ色を提案します。</div>
+  <div class="note">「おすすめ」は背景から浮き上がる同系色のネオンカラーです。</div>
 </fieldset>
 
 <fieldset><legend>切り抜き（スクショ幅を100とした値・正方形）</legend>
@@ -79,13 +88,13 @@ const FONTS = {
 };
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
-let bgImg = null, shotImg = null, bgKey = '';
+let bgImg = null, shotImg = null;
 
 const store = {get:k=>{try{return localStorage.getItem('promo_'+k)}catch(e){return null}},
                set:(k,v)=>{try{localStorage.setItem('promo_'+k,v)}catch(e){}}};
 
 // 設定の記憶
-['owned','count','ct','cs','font','edgeColor'].forEach(id=>{
+['owned','count','ct','cs','font'].forEach(id=>{
   const v = store.get(id); if (v!==null) $(id).value = v;
   $(id).addEventListener('input',()=>{ store.set(id,$(id).value); draw(); });
 });
@@ -94,14 +103,33 @@ $('manual').addEventListener('change',()=>{ store.set('manual',$('manual').check
 $('showCount').addEventListener('change',draw);
 
 function fromFile(f, cb){ const i=new Image(); i.onload=()=>{cb(i);draw();}; i.src=URL.createObjectURL(f); }
-$('bg').addEventListener('change',()=>{ const f=$('bg').files[0]; if(f) fromFile(f,setBg); });
 $('shot').addEventListener('change',()=>{ const f=$('shot').files[0]; if(f) fromFile(f,i=>shotImg=i); });
-function setBg(i, save=true){
-  bgImg = i; suggestEdge(i);
-  if (save){ try{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height;
-    c.getContext('2d').drawImage(i,0,0); store.set('bg', c.toDataURL('image/jpeg',0.92)); }catch(e){} }
+
+// ---- 背景セット（背景画像＋フチ色を1セットで保存） ----
+let sets = []; try{ sets = JSON.parse(store.get('sets')||'[]'); }catch(e){}
+let cur = store.get('curSet');
+const saveSets = () => { try{ localStorage.setItem('promo_sets', JSON.stringify(sets)); }catch(e){ alert('保存容量がいっぱいです。使わないセットを削除してください。'); } };
+const curSet = () => sets.find(t=>t.id===cur);
+function renderSets(){
+  const box=$('sets'); box.innerHTML='';
+  sets.forEach(t=>{ const b=document.createElement('button'); b.type='button'; b.className='set'+(t.id===cur?' on':'');
+    b.style.backgroundImage=`url(${t.bg})`; b.innerHTML=`<b style="background:${t.edge}"></b><span class="del">×</span>`;
+    b.onclick=e=>{ if (e.target.classList.contains('del')){ if(confirm('このセットを削除しますか？')){ sets=sets.filter(x=>x!==t); saveSets(); if(cur===t.id) selectSet(sets[0]?.id); else renderSets(); } return; } selectSet(t.id); };
+    box.appendChild(b); });
 }
-{ const d = store.get('bg'); if (d){ const i=new Image(); i.onload=()=>{setBg(i,false);draw();}; i.src=d; } }
+function selectSet(id){
+  cur=id; store.set('curSet',id||''); const t=curSet(); renderSets();
+  if (!t){ bgImg=null; currentList=[]; renderSwatches([]); draw(); return; }
+  const i=new Image(); i.onload=()=>{ bgImg=i; currentList=edgeCandidates(analyzeBg(i)); $('edgeColor').value=t.edge; renderSwatches(currentList); draw(); }; i.src=t.bg;
+}
+$('bg').addEventListener('change',()=>{ const f=$('bg').files[0]; if(!f) return; $('bg').value='';
+  fromFile(f,i=>{
+    const k=Math.min(1,S/Math.min(i.width,i.height)), c=document.createElement('canvas');
+    c.width=Math.round(i.width*k); c.height=Math.round(i.height*k); c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+    const t={id:String(Date.now()), bg:c.toDataURL('image/jpeg',0.9), edge:edgeCandidates(analyzeBg(i))[0].hex};
+    sets.push(t); saveSets(); selectSet(t.id);
+  });
+});
 document.addEventListener('paste',e=>{ const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/')); if(f) fromFile(f,i=>shotImg=i); });
 document.addEventListener('dragover',e=>e.preventDefault());
 document.addEventListener('drop',e=>{ e.preventDefault(); const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/')); if(f) fromFile(f,i=>shotImg=i); });
@@ -118,7 +146,7 @@ function analyzeBg(img){
     const [h,s,l]=hsl(d[i],d[i+1],d[i+2]); const w=s*(1-Math.abs(2*l-1));
     x+=Math.cos(h*2*Math.PI)*w; y+=Math.sin(h*2*Math.PI)*w; L+=l; n++;
   }
-  return { hue:((Math.atan2(y,x)*180/Math.PI)+360)%360, light:L/n, key:c.toDataURL('image/jpeg',.5).slice(-60) };
+  return { hue:((Math.atan2(y,x)*180/Math.PI)+360)%360, light:L/n };
 }
 function hsl2hex(h,s,l){ h=((h%360)+360)%360; s/=100; l/=100;
   const f=n=>{ const k=(n+h/30)%12, a=s*Math.min(l,1-l); return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1)))).toString(16).padStart(2,'0'); };
@@ -140,16 +168,8 @@ function renderSwatches(list){
     b.onclick=()=>{ $('edgeColor').value=c.hex; saveEdge(); renderSwatches(list); draw(); }; box.appendChild(b); });
 }
 let currentList=[];
-function saveEdge(){ store.set('edgeColor',$('edgeColor').value); if (bgKey) store.set('edge_'+bgKey,$('edgeColor').value); }
-function suggestEdge(img){
-  const bg=analyzeBg(img); bgKey=bg.key; currentList=edgeCandidates(bg);
-  const saved=store.get('edge_'+bgKey);
-  if (saved){ $('edgeColor').value=saved; $('edgeMsg').textContent='この背景で前回選んだフチ色を使っています。'; }
-  else { $('edgeColor').value=currentList[0].hex; saveEdge();
-    $('edgeMsg').textContent='初めての背景なので、おすすめのフチ色を設定しました。下の候補からも選べます。'; }
-  renderSwatches(currentList);
-}
-$('edgeColor').addEventListener('input',()=>{ saveEdge(); renderSwatches(currentList); });
+function saveEdge(){ const t=curSet(); if (t){ t.edge=$('edgeColor').value; saveSets(); renderSets(); } }
+$('edgeColor').addEventListener('input',()=>{ saveEdge(); renderSwatches(currentList); draw(); });
 function hsl(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;
   if(mx===mn) return [0,0,l]; const d=mx-mn, s=l>.5?d/(2-mx-mn):d/(mx+mn);
   const h = mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4); return [h/6,s,l]; }
@@ -227,6 +247,7 @@ function draw(){
     ctx.drawImage(c,0,0);
   } else countValue();
 }
+selectSet(cur || sets[0]?.id);
 $('dl').onclick=()=>{ const a=document.createElement('a'); a.download='item-promo-'+Date.now()+'.png'; a.href=cv.toDataURL('image/png'); a.click(); };
 draw();
 Promise.all(Object.values(FONTS).map(f=>document.fonts.load(f,"×0123456789").catch(()=>{}))).then(draw);
