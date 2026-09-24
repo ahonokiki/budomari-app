@@ -354,7 +354,9 @@ dbGet('slots').then(v=>{
 $('dl').onclick=()=>{ const name='poketsui-'+Date.now()+'.png';
   cv.toBlob(async blob=>{
     const file=new File([blob],name,{type:'image/png'});
-    try{ if (navigator.canShare?.({files:[file]})){ await navigator.share({files:[file]}); return; } }catch(e){ if(e.name==='AbortError') return; }
+    // 共有メニューが使えるのは単体で開いたときだけ（Claude上のページ内では使えないので、必ず画像表示へ）
+    const framed=(()=>{ try{ return window.self!==window.top; }catch(e){ return true; } })();
+    if (!framed && navigator.canShare?.({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){} }
     // 共有できない環境：画像を大きく表示 → 長押しで「写真に保存」
     $('outImg').src=URL.createObjectURL(blob); $('out').hidden=false;
   },'image/png'); };
