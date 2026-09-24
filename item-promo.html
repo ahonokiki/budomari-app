@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>アイテム宣伝画像メーカー</title>
+<style>
+  body{margin:0;padding:16px;font-family:sans-serif;background:#fff5f8;color:#333}
+  h1{font-size:18px;margin:0 0 12px}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+  label{font-size:14px}
+  input[type=number]{width:70px}
+  canvas{width:100%;max-width:560px;border-radius:8px;box-shadow:0 2px 10px #0002;display:block;margin-top:12px}
+  button{background:#ff4fa3;color:#fff;border:0;border-radius:20px;padding:10px 18px;font-size:15px}
+  details{margin-top:8px;font-size:13px}
+</style>
+</head>
+<body>
+<h1>アイテム宣伝画像メーカー</h1>
+<div class="row"><label>背景画像 <input type="file" id="bg" accept="image/*"></label></div>
+<div class="row"><label>アイテムのスクショ <input type="file" id="shot" accept="image/*"></label></div>
+<div class="row"><label>個数 ×<input type="number" id="count" value="3" min="1"></label>
+  <label><input type="checkbox" id="showCount" checked>表示</label></div>
+<details><summary>切り抜き範囲（スクショ幅に対する割合 %）</summary>
+  <div class="row">
+    <label>左 <input type="number" id="cl" value="0" step="0.5"></label>
+    <label>右 <input type="number" id="cr" value="100" step="0.5"></label>
+    <label>上 <input type="number" id="ct" value="48.5" step="0.5"></label>
+    <label>下 <input type="number" id="cb" value="155" step="0.5"></label>
+  </div>
+  <div style="font-size:12px">※上下もスクショの「幅」基準の%。標準はアイテム画像上端〜「所持数」行まで。</div>
+</details>
+<canvas id="cv" width="1254" height="1254"></canvas>
+<div class="row" style="margin-top:12px"><button id="dl">画像を保存</button></div>
+
+<script>
+const S = 1254;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let bgImg = null, shotImg = null;
+const $ = id => document.getElementById(id);
+
+function load(input, cb){
+  input.addEventListener('change', () => {
+    const f = input.files[0]; if (!f) return;
+    const img = new Image();
+    img.onload = () => { cb(img); draw(); };
+    img.src = URL.createObjectURL(f);
+  });
+}
+load($('bg'), i => bgImg = i);
+load($('shot'), i => shotImg = i);
+['count','showCount','cl','cr','ct','cb'].forEach(id => $(id).addEventListener('input', draw));
+
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+
+function draw(){
+  ctx.clearRect(0,0,S,S);
+  if (bgImg){ // cover
+    const k = Math.max(S/bgImg.width, S/bgImg.height);
+    const w = bgImg.width*k, h = bgImg.height*k;
+    ctx.drawImage(bgImg,(S-w)/2,(S-h)/2,w,h);
+  } else { ctx.fillStyle='#ff7aa8'; ctx.fillRect(0,0,S,S); }
+
+  // フレーム
+  const F = {x:120, y:118, w:1014, h:1030, r:34};
+  ctx.save();
+  ctx.shadowColor = '#ff3fb4'; ctx.shadowBlur = 40;
+  ctx.lineWidth = 14; ctx.strokeStyle = '#ff9ad5';
+  rr(F.x,F.y,F.w,F.h,F.r); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#fff'; rr(F.x,F.y,F.w,F.h,F.r); ctx.fill();
+
+  // スクショ切り抜き
+  if (shotImg){
+    const W = shotImg.width;
+    const sx = W*$('cl').value/100, sw = W*($('cr').value-$('cl').value)/100;
+    const sy = W*$('ct').value/100, sh = W*($('cb').value-$('ct').value)/100;
+    const pad = 10, bw = F.w-pad*2, bh = F.h-pad*2;
+    const k = Math.min(bw/sw, bh/sh);
+    const dw = sw*k, dh = sh*k;
+    ctx.save(); rr(F.x+pad,F.y+pad,bw,bh,F.r-8); ctx.clip();
+    ctx.drawImage(shotImg,sx,sy,sw,sh,F.x+(F.w-dw)/2,F.y+pad+(bh-dh)/2,dw,dh);
+    ctx.restore();
+  }
+  ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; rr(F.x,F.y,F.w,F.h,F.r); ctx.stroke();
+
+  // ×N
+  if ($('showCount').checked){
+    const t = '×' + $('count').value;
+    ctx.save();
+    ctx.font = '900 250px "Arial Rounded MT Bold","Hiragino Maru Gothic ProN",sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+    const x = 1215, y = 330;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = '#ff2fa0'; ctx.shadowBlur = 30;
+    ctx.lineWidth = 44; ctx.strokeStyle = '#fff'; ctx.strokeText(t,x,y);
+    ctx.shadowBlur = 0;
+    const g = ctx.createLinearGradient(0,y-220,0,y);
+    g.addColorStop(0,'#ff8fd0'); g.addColorStop(1,'#ff2e9a');
+    ctx.fillStyle = g; ctx.fillText(t,x,y);
+    ctx.restore();
+  }
+}
+$('dl').onclick = () => {
+  const a = document.createElement('a');
+  a.download = 'item-promo.png'; a.href = cv.toDataURL('image/png'); a.click();
+};
+draw();
+</script>
+</body>
+</html>
