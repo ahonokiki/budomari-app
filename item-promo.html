@@ -15,6 +15,9 @@
   canvas{width:100%;border-radius:8px;box-shadow:0 2px 10px #0002;display:block;margin-top:12px}
   button{background:#ff4fa3;color:#fff;border:0;border-radius:20px;padding:10px 18px;font-size:15px}
   fieldset{border:1px solid #f3c;border-radius:8px;margin:8px 0;font-size:13px}
+  .sw{display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:2px solid #eee;border-radius:10px;padding:4px 6px;font-size:11px;color:#333;cursor:pointer}
+  .sw.on{border-color:#ff4fa3}
+  .sw i{width:34px;height:34px;border-radius:50%;box-shadow:0 0 8px currentColor}
   .note{font-size:12px;color:#666}
 </style>
 </head>
@@ -33,8 +36,8 @@
   </div>
   <div class="row"><label>書体
     <select id="font">
+      <option value="B" selected>B: もちもち（Mochiy Pop One）※見本に近い</option>
       <option value="A">A: まるっとポップ（M PLUS Rounded 極太）</option>
-      <option value="B">B: もちもち（Mochiy Pop One）</option>
       <option value="C">C: やさしい丸（Zen Maru Gothic 極太）</option>
       <option value="D">D: ぽってり（Dela Gothic One）</option>
       <option value="E">E: 手書き風（Hachi Maru Pop）</option>
@@ -44,10 +47,9 @@
 </fieldset>
 
 <fieldset><legend>フチの色</legend>
-  <div class="row">
-    <label><input type="radio" name="edge" value="auto" checked>背景から自動</label>
-    <label><input type="radio" name="edge" value="manual">指定 <input type="color" id="edgeColor" value="#ff5fc8"></label>
-  </div>
+  <div class="row" id="swatches"></div>
+  <div class="row"><label>自由に指定 <input type="color" id="edgeColor" value="#ec5fd0"></label></div>
+  <div class="note" id="edgeMsg">背景を読み込むと、背景から浮き上がるおすすめ色を提案します。</div>
 </fieldset>
 
 <fieldset><legend>切り抜き（スクショ幅を100とした値・正方形）</legend>
@@ -64,12 +66,12 @@
 <script>
 const S = 1254;
 // アイテム画像の位置・サイズは常に固定（正方形）
-const BOX = {x:152, y:152, size:950};
-const R = 48;        // 四隅の丸み（アイテム画像とフチで共通）
-const EDGE = 10;     // フチの太さ（常に同じ）
+const BOX = {x:127, y:128, size:1000};
+const R = 44;        // 四隅の丸み（アイテム画像とフチで共通）
+const EDGE_IN = 6, EDGE_CORE = 8; // フチ：内側ピンク6px＋白い芯8px＋外側の光（常に同じ太さ）
 const FONTS = {
   A:'900 290px "M PLUS Rounded 1c"',
-  B:'290px "Mochiy Pop One"',
+  B:'272px "Mochiy Pop One"',
   C:'900 300px "Zen Maru Gothic"',
   D:'280px "Dela Gothic One"',
   E:'310px "Hachi Maru Pop"',
@@ -77,7 +79,7 @@ const FONTS = {
 };
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
-let bgImg = null, shotImg = null, autoEdge = '#ff5fc8';
+let bgImg = null, shotImg = null, bgKey = '';
 
 const store = {get:k=>{try{return localStorage.getItem('promo_'+k)}catch(e){return null}},
                set:(k,v)=>{try{localStorage.setItem('promo_'+k,v)}catch(e){}}};
@@ -88,16 +90,14 @@ const store = {get:k=>{try{return localStorage.getItem('promo_'+k)}catch(e){retu
   $(id).addEventListener('input',()=>{ store.set(id,$(id).value); draw(); });
 });
 if (store.get('manual')==='1') $('manual').checked = true;
-if (store.get('edge')==='manual') document.querySelector('input[name=edge][value=manual]').checked = true;
 $('manual').addEventListener('change',()=>{ store.set('manual',$('manual').checked?'1':'0'); draw(); });
 $('showCount').addEventListener('change',draw);
-document.querySelectorAll('input[name=edge]').forEach(r=>r.addEventListener('change',()=>{ store.set('edge',r.value); draw(); }));
 
 function fromFile(f, cb){ const i=new Image(); i.onload=()=>{cb(i);draw();}; i.src=URL.createObjectURL(f); }
 $('bg').addEventListener('change',()=>{ const f=$('bg').files[0]; if(f) fromFile(f,setBg); });
 $('shot').addEventListener('change',()=>{ const f=$('shot').files[0]; if(f) fromFile(f,i=>shotImg=i); });
 function setBg(i, save=true){
-  bgImg = i; autoEdge = pickEdgeColor(i);
+  bgImg = i; suggestEdge(i);
   if (save){ try{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height;
     c.getContext('2d').drawImage(i,0,0); store.set('bg', c.toDataURL('image/jpeg',0.92)); }catch(e){} }
 }
@@ -106,18 +106,50 @@ document.addEventListener('paste',e=>{ const f=[...e.clipboardData.files].find(f
 document.addEventListener('dragover',e=>e.preventDefault());
 document.addEventListener('drop',e=>{ e.preventDefault(); const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/')); if(f) fromFile(f,i=>shotImg=i); });
 
-// 背景の平均的な色相から、同系色の蛍光色を作る
-function pickEdgeColor(img){
-  const c=document.createElement('canvas'); c.width=c.height=32;
-  const g=c.getContext('2d'); g.drawImage(img,0,0,32,32);
-  const d=g.getImageData(0,0,32,32).data; let x=0,y=0;
+// ---- フチ色のおすすめ ----
+// 背景の主な色相・明るさを調べ、配色理論（類似色／補色／三角配色）でネオン色の候補を作る。
+// 「おすすめ」は類似色を寒色側へ約35°ずらした色：同系色でなじみつつ、色相差と高彩度で背景から浮き上がる。
+// 背景が暗いときは明るく、明るいときは少し濃くして明度差もつける。
+function analyzeBg(img){
+  const c=document.createElement('canvas'); c.width=c.height=48;
+  const g=c.getContext('2d'); g.drawImage(img,0,0,48,48);
+  const d=g.getImageData(0,0,48,48).data; let x=0,y=0,L=0,n=0;
   for (let i=0;i<d.length;i+=4){
     const [h,s,l]=hsl(d[i],d[i+1],d[i+2]); const w=s*(1-Math.abs(2*l-1));
-    x+=Math.cos(h*2*Math.PI)*w; y+=Math.sin(h*2*Math.PI)*w;
+    x+=Math.cos(h*2*Math.PI)*w; y+=Math.sin(h*2*Math.PI)*w; L+=l; n++;
   }
-  const h=((Math.atan2(y,x)/(2*Math.PI))+1)%1;
-  return `hsl(${Math.round(h*360)},100%,68%)`;
+  return { hue:((Math.atan2(y,x)*180/Math.PI)+360)%360, light:L/n, key:c.toDataURL('image/jpeg',.5).slice(-60) };
 }
+function hsl2hex(h,s,l){ h=((h%360)+360)%360; s/=100; l/=100;
+  const f=n=>{ const k=(n+h/30)%12, a=s*Math.min(l,1-l); return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1)))).toString(16).padStart(2,'0'); };
+  return '#'+f(0)+f(8)+f(4); }
+function edgeCandidates(bg){
+  const l = bg.light<0.35 ? 72 : bg.light>0.85 ? 56 : 64;
+  return [
+    {name:'おすすめ',  hex:hsl2hex(bg.hue-38,80,l)},
+    {name:'類似色',    hex:hsl2hex(bg.hue+35,95,l)},
+    {name:'補色',      hex:hsl2hex(bg.hue+180,95,l)},
+    {name:'三角配色',  hex:hsl2hex(bg.hue+120,95,l)},
+    {name:'ホワイト',  hex:'#fff4fc'},
+  ];
+}
+function renderSwatches(list){
+  const box=$('swatches'); box.innerHTML='';
+  list.forEach(c=>{ const b=document.createElement('button'); b.className='sw'+(c.hex===$('edgeColor').value?' on':''); b.type='button';
+    b.innerHTML=`<i style="background:${c.hex};color:${c.hex}"></i>${c.name}`;
+    b.onclick=()=>{ $('edgeColor').value=c.hex; saveEdge(); renderSwatches(list); draw(); }; box.appendChild(b); });
+}
+let currentList=[];
+function saveEdge(){ store.set('edgeColor',$('edgeColor').value); if (bgKey) store.set('edge_'+bgKey,$('edgeColor').value); }
+function suggestEdge(img){
+  const bg=analyzeBg(img); bgKey=bg.key; currentList=edgeCandidates(bg);
+  const saved=store.get('edge_'+bgKey);
+  if (saved){ $('edgeColor').value=saved; $('edgeMsg').textContent='この背景で前回選んだフチ色を使っています。'; }
+  else { $('edgeColor').value=currentList[0].hex; saveEdge();
+    $('edgeMsg').textContent='初めての背景なので、おすすめのフチ色を設定しました。下の候補からも選べます。'; }
+  renderSwatches(currentList);
+}
+$('edgeColor').addEventListener('input',()=>{ saveEdge(); renderSwatches(currentList); });
 function hsl(r,g,b){ r/=255;g/=255;b/=255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;
   if(mx===mn) return [0,0,l]; const d=mx-mn, s=l>.5?d/(2-mx-mn):d/(mx+mn);
   const h = mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4); return [h/6,s,l]; }
@@ -134,7 +166,7 @@ function draw(){
     ctx.drawImage(bgImg,(S-w)/2,(S-h)/2,w,h); }
   else { ctx.fillStyle='#ff7aa8'; ctx.fillRect(0,0,S,S); }
 
-  const edge = document.querySelector('input[name=edge]:checked').value==='auto' ? autoEdge : $('edgeColor').value;
+  const edge = $('edgeColor').value;
   const {x,y,size} = BOX;
 
   // アイテム画像（正方形切り抜き・縦横同倍率・ピクセルはそのまま）
@@ -147,27 +179,52 @@ function draw(){
   }
   ctx.restore();
 
-  // 蛍光フチ（外側・一定の太さ・同じ丸み）
+  // 蛍光フチ（ネオン管風：外側の光 → 白い芯 → 内側の色線。太さ・丸みは常に同じ。光は画像の上にはかけない）
+  const o1 = EDGE_IN/2, o2 = EDGE_IN + EDGE_CORE/2, OUTER = EDGE_IN + EDGE_CORE;
+  { // 外側の光（別キャンバスで描いて、画像の上にかかる部分は消す）
+    const c=document.createElement('canvas'); c.width=c.height=S; const g=c.getContext('2d');
+    g.strokeStyle=edge; g.shadowColor=edge; g.lineWidth=EDGE_CORE; g.shadowBlur=24;
+    for (let n=0;n<3;n++){ g.beginPath(); g.roundRect(x-o2,y-o2,size+o2*2,size+o2*2,R+o2); g.stroke(); }
+    g.shadowBlur=0; g.globalCompositeOperation='destination-out';
+    g.beginPath(); g.roundRect(x-OUTER,y-OUTER,size+OUTER*2,size+OUTER*2,R+OUTER); g.fill();
+    ctx.drawImage(c,0,0);
+  }
   ctx.save();
-  ctx.shadowColor=edge; ctx.shadowBlur=28;
-  ctx.lineWidth=EDGE; ctx.strokeStyle=edge;
-  rr(x-EDGE/2,y-EDGE/2,size+EDGE,size+EDGE,R+EDGE/2); ctx.stroke();
-  ctx.shadowBlur=0; ctx.lineWidth=3; ctx.strokeStyle='#fff';
-  rr(x-EDGE/2,y-EDGE/2,size+EDGE,size+EDGE,R+EDGE/2); ctx.stroke();
+  ctx.filter='blur(1px)';
+  ctx.lineWidth=EDGE_IN+1; ctx.strokeStyle=edge; rr(x-o1,y-o1,size+o1*2,size+o1*2,R+o1); ctx.stroke();
+  ctx.lineWidth=EDGE_CORE; ctx.strokeStyle='#fffaff'; ctx.shadowColor='#fff'; ctx.shadowBlur=6;
+  rr(x-o2,y-o2,size+o2*2,size+o2*2,R+o2); ctx.stroke();
   ctx.restore();
 
-  // ×数字
+  // ×数字（ぷっくり濃ピンク＋太い白フチ＋外側のマゼンタの光）。×は数字より小さめ
   if ($('showCount').checked){
-    const t='×'+countValue();
-    ctx.save(); ctx.font=FONTS[$('font').value]||FONTS.A;
-    ctx.textAlign='right'; ctx.textBaseline='alphabetic'; ctx.lineJoin='round';
-    const tx=S-30, ty=340;
-    ctx.shadowColor=edge; ctx.shadowBlur=30;
-    ctx.lineWidth=46; ctx.strokeStyle='#fff'; ctx.strokeText(t,tx,ty);
-    ctx.shadowBlur=0;
-    const g=ctx.createLinearGradient(0,ty-240,0,ty);
-    g.addColorStop(0,'#ff9ad6'); g.addColorStop(1,'#ff2e9a');
-    ctx.fillStyle=g; ctx.fillText(t,tx,ty); ctx.restore();
+    const num=String(countValue());
+    const base=FONTS[$('font').value]||FONTS.B;
+    const px=parseFloat(base.match(/(\d+)px/)[1]);
+    const fNum=base, fX=base.replace(/\d+px/, Math.round(px*0.66)+'px');
+    const RIGHT=1194, BASE=262, GAP=18, FAT=16, OUT=36+16, XUP=26, GLOW=edge, SX=1.08;
+    const m=document.createElement('canvas').getContext('2d');
+    m.font=fNum; const wN=m.measureText(num).width*SX;
+    m.font=fX;  const wX=m.measureText('×').width;
+    const parts=[{t:num,f:fNum,x:RIGHT-wN,sx:SX},{t:'×',f:fX,x:RIGHT-wN-GAP-wX,sx:1,dy:-XUP}];
+    const each=(g,fn)=>parts.forEach(q=>{ g.save(); g.font=q.f; g.textAlign='left'; g.textBaseline='alphabetic'; g.lineJoin='round';
+      g.translate(q.x,BASE+(q.dy||0)); g.scale(q.sx,1); fn(g,q.t); g.restore(); });
+    // 光と白フチ
+    ctx.save(); ctx.shadowColor=GLOW; ctx.shadowBlur=34;
+    for (let n=0;n<3;n++) each(ctx,(g,t)=>{ g.shadowColor=GLOW; g.shadowBlur=34; g.strokeStyle='#fff'; g.lineWidth=OUT; g.strokeText(t,0,0); });
+    each(ctx,(g,t)=>{ g.strokeStyle='#fff'; g.lineWidth=OUT; g.strokeText(t,0,0); });
+    ctx.restore();
+    // 文字本体（ぷっくり感）
+    const c=document.createElement('canvas'); c.width=c.height=S; const g=c.getContext('2d');
+    each(g,(g,t)=>{ g.fillStyle=g.strokeStyle='#f82da1'; g.lineWidth=FAT; g.fillText(t,0,0); g.strokeText(t,0,0); }); // 太らせる
+    g.globalCompositeOperation='source-atop';
+    each(g,(g,t)=>{ g.strokeStyle='#d0409a'; g.lineWidth=FAT+10; g.filter='blur(4px)'; g.strokeText(t,0,0); });       // ふち側を少し濃く
+    each(g,(g,t)=>{ g.fillStyle='#f82da1'; g.filter='blur(6px)'; g.fillText(t,0,-2); });                           // 中はベタ
+    each(g,(g,t)=>{ g.fillStyle='rgba(255,150,215,.3)'; g.filter='blur(14px)'; g.fillText(t,-10,-18); g.filter='none'; }); // 左上のハイライト
+    const mk=document.createElement('canvas'); mk.width=mk.height=S;
+    each(mk.getContext('2d'),(g,t)=>{ g.fillStyle=g.strokeStyle='#000'; g.lineWidth=FAT; g.fillText(t,0,0); g.strokeText(t,0,0); });
+    g.globalCompositeOperation='destination-in'; g.filter='none'; g.drawImage(mk,0,0);
+    ctx.drawImage(c,0,0);
   } else countValue();
 }
 $('dl').onclick=()=>{ const a=document.createElement('a'); a.download='item-promo-'+Date.now()+'.png'; a.href=cv.toDataURL('image/png'); a.click(); };
