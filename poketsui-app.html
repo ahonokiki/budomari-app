@@ -9,7 +9,7 @@
 <style>
   :root{--pink:#ff6fae;--pink2:#ff9cc8;--lav:#a98be0;--lav2:#7f63c9;--ink:#5a4a5e;--sub:#9a8a9e;--line:#f6d6e6;--green1:#8fe8b9;--green2:#4fd08f}
   *{box-sizing:border-box}
-  body{margin:0;font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;color:var(--ink);
+  body{margin:0;background-color:#fff0f6;font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;color:var(--ink);
     background:#fff0f6 radial-gradient(circle at 10px 10px,#ffe0ee 3px,transparent 4px) 0 0/22px 22px;min-height:100vh}
   header{background:linear-gradient(135deg,#9d86d8,#c38fd8 55%,#f59ac8);color:#fff;
     text-align:center;padding:14px 16px 12px;font-size:18px;font-weight:900;letter-spacing:.06em;box-shadow:0 3px 10px #b07ad044;border-radius:0 0 22px 22px}
@@ -149,6 +149,11 @@
 </div></div>
 
 
+<div id="out" class="sheet" hidden><div class="sheetIn" style="text-align:center">
+  <div class="sheetHead">🎁 完成！<button class="close" id="outClose" type="button">✕</button></div>
+  <p style="font-weight:900;color:#8a5a86;margin:14px 0 10px">画像を長押しして「"写真"に保存」を選んでね</p>
+  <img id="outImg" alt="完成画像" style="width:100%;border-radius:20px;box-shadow:0 4px 14px #0002;-webkit-touch-callout:default">
+</div></div>
 <div class="bar"><div class="inner"><button class="pill save" id="dl">🎁 画像を保存</button></div></div>
 
 <script>
@@ -198,7 +203,7 @@ const SLOTS=[['ピンク','#ff7eb6'],['レッド','#ff5a6e'],['オレンジ','#f
 let sets = Array(10).fill(null), cur = +(store.get('curSlot')||0), pickSlot = 0;
 const idb = new Promise((ok,ng)=>{ const r=indexedDB.open('poketsui',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>ok(r.result); r.onerror=()=>ng(r.error); });
 const dbGet = k => idb.then(d=>new Promise(ok=>{ const q=d.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>ok(q.result); q.onerror=()=>ok(undefined); }));
-const saveSets = () => idb.then(d=>{ const t=d.transaction('kv','readwrite'); t.objectStore('kv').put(sets,'slots'); t.onerror=()=>alert('保存できませんでした。'); });
+const saveSets = () => idb.then(d=>{ const t=d.transaction('kv','readwrite'); t.objectStore('kv').put(sets,'slots'); t.onerror=()=>console.warn('保存できませんでした'); });
 try{ navigator.storage?.persist?.(); }catch(e){} // 端末に「消さないで」と依頼
 const curSet = () => sets[cur];
 function renderSets(){
@@ -208,14 +213,13 @@ function renderSets(){
     if (t) b.style.backgroundImage=`url(${t.bg})`;
     b.innerHTML=`<em>${name}</em>`+(t?`<b style="background:${t.edge}"></b><span class="del">×</span>`:'<i>＋</i>');
     b.onclick=e=>{
-      if (e.target.classList.contains('del')){ if(confirm(`${name}のセットを削除しますか？`)){ sets[n]=null; saveSets(); selectSet(n); } return; }
       if (!t){ pickSlot=n; $('bg').click(); return; }
       selectSet(n); };
     box.appendChild(b); });
   const dl=$('delList'); dl.innerHTML='';
   SLOTS.forEach(([name,col],n)=>{ if(!sets[n]) return; const d=document.createElement('button'); d.type='button'; d.className='delBtn';
     d.style.setProperty('--slot',col); d.textContent='🗑 '+name;
-    d.onclick=()=>{ if(confirm(`${name}の背景セットを削除しますか？`)){ sets[n]=null; saveSets(); selectSet(n); } }; dl.appendChild(d); });
+    d.onclick=()=>{ if(d.dataset.sure){ sets[n]=null; saveSets(); selectSet(n); } else { d.dataset.sure=1; d.textContent='もう一度タップで削除'; setTimeout(()=>{ if(d.isConnected){ delete d.dataset.sure; d.textContent='🗑 '+name; } },3000); } }; dl.appendChild(d); });
   if(!dl.children.length) dl.innerHTML='<div class="note">登録済みの背景セットはありません。</div>';
 }
 function selectSet(n){
@@ -358,10 +362,11 @@ dbGet('slots').then(v=>{
 $('dl').onclick=()=>{ const name='poketsui-'+Date.now()+'.png';
   cv.toBlob(async blob=>{
     const file=new File([blob],name,{type:'image/png'});
-    // iPhone等：共有メニューを開く →「画像を保存」で写真アプリへ
-    if (navigator.canShare?.({files:[file]})){ try{ await navigator.share({files:[file]}); return; }catch(e){ if(e.name==='AbortError') return; } }
-    const a=document.createElement('a'); a.download=name; a.href=URL.createObjectURL(blob); a.click();
+    try{ if (navigator.canShare?.({files:[file]})){ await navigator.share({files:[file]}); return; } }catch(e){ if(e.name==='AbortError') return; }
+    // 共有できない環境：画像を大きく表示 → 長押しで「写真に保存」
+    $('outImg').src=URL.createObjectURL(blob); $('out').hidden=false;
   },'image/png'); };
+$('outClose').onclick=()=>{ $('out').hidden=true; };
 draw();
 Promise.all(Object.values(FONTS).map(f=>document.fonts.load(f,"×0123456789").catch(()=>{}))).then(draw);
 </script>
