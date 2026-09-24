@@ -30,6 +30,7 @@
   </div>
   <div style="font-size:12px">※上下もスクショの「幅」基準の%。標準はアイテム画像上端〜「所持数」行まで。</div>
 </details>
+<div style="font-size:12px">スクショは貼り付け(Ctrl+V)やドラッグ&ドロップでもOK。背景と切り抜き設定は次回も記憶されます。</div>
 <canvas id="cv" width="1254" height="1254"></canvas>
 <div class="row" style="margin-top:12px"><button id="dl">画像を保存</button></div>
 
@@ -47,7 +48,16 @@ function load(input, cb){
     img.src = URL.createObjectURL(f);
   });
 }
-load($('bg'), i => bgImg = i);
+load($('bg'), i => { bgImg = i; try{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); localStorage.setItem('promoBg', c.toDataURL('image/png')); }catch(e){} });
+// 前回の背景を自動で復元
+try{ const d=localStorage.getItem('promoBg'); if(d){ const i=new Image(); i.onload=()=>{bgImg=i;draw();}; i.src=d; } }catch(e){}
+// 切り抜き設定・個数を記憶
+['count','cl','cr','ct','cb'].forEach(id=>{ try{ const v=localStorage.getItem('promo_'+id); if(v!==null) $(id).value=v; }catch(e){} $(id).addEventListener('change',()=>{ try{localStorage.setItem('promo_'+id,$(id).value);}catch(e){} }); });
+// スクショは貼り付け(Ctrl+V)・ドラッグ&ドロップでも読み込み
+function setShot(f){ const i=new Image(); i.onload=()=>{shotImg=i;draw();}; i.src=URL.createObjectURL(f); }
+document.addEventListener('paste',e=>{ const f=[...e.clipboardData.files].find(f=>f.type.startsWith('image/')); if(f) setShot(f); });
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{ e.preventDefault(); const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/')); if(f) setShot(f); });
 load($('shot'), i => shotImg = i);
 ['count','showCount','cl','cr','ct','cb'].forEach(id => $(id).addEventListener('input', draw));
 
@@ -76,8 +86,10 @@ function draw(){
     const sx = W*$('cl').value/100, sw = W*($('cr').value-$('cl').value)/100;
     const sy = W*$('ct').value/100, sh = W*($('cb').value-$('ct').value)/100;
     const pad = 10, bw = F.w-pad*2, bh = F.h-pad*2;
-    const k = Math.min(bw/sw, bh/sh);
+    const k = Math.min(bw/sw, bh/sh); // 縦横比は固定
     const dw = sw*k, dh = sh*k;
+    // 元画像のピクセルを切り抜いて縦横同倍率で拡大するだけ（描き直し・色補正などは一切しない）
+    ctx.imageSmoothingQuality = 'high';
     ctx.save(); rr(F.x+pad,F.y+pad,bw,bh,F.r-8); ctx.clip();
     ctx.drawImage(shotImg,sx,sy,sw,sh,F.x+(F.w-dw)/2,F.y+pad+(bh-dh)/2,dw,dh);
     ctx.restore();
@@ -103,7 +115,7 @@ function draw(){
 }
 $('dl').onclick = () => {
   const a = document.createElement('a');
-  a.download = 'item-promo.png'; a.href = cv.toDataURL('image/png'); a.click();
+  a.download = 'item-promo-' + Date.now() + '.png'; a.href = cv.toDataURL('image/png'); a.click();
 };
 draw();
 </script>
