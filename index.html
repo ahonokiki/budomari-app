@@ -1451,6 +1451,11 @@ const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 // GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec'; // 本番＝記録先スプレッドシート（既定。⚙設定で上書き可）
 function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL || ''; }
+// その時のパーツ係数（設定の値）も一緒に記録する。後から「この日の計算はどの係数だったか」が分かるように（2026-10-12）
+function coefForSheet() {
+  try { return JSON.stringify({ coef: (APPCFG.coef || []).map(function(c){ return { name: c.name, k: Number(c.k) }; }), hamCoef: Number(APPCFG.hamCoef) }); }
+  catch (e) { return ''; }
+}
 function postToSheet(entry) {
   const url = loadWebhook();
   if (!url) return; // 未設定なら端末内の履歴のみ
@@ -1458,7 +1463,7 @@ function postToSheet(entry) {
     fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ type: 'add_record', record: entry })
+      body: JSON.stringify({ type: 'add_record', record: Object.assign({}, entry, { coef: coefForSheet() }) })
     }).catch(function() {});
   } catch (e) {}
 }
