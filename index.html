@@ -1458,6 +1458,16 @@ document.getElementById('msg-copy').addEventListener('click', function(){
   const b = this, o = b.innerHTML;
   b.classList.add('copied'); b.innerHTML = '<span>✅</span> コピーしました！';
   setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
+  // シュエリー分：コピーしたら、ガツ・レバーも「発注した」にするかを聞く（押し忘れを減らす。2026-10-13）
+  const sg = parseFloat(document.getElementById('sub-gatsu').value) || 0, sl = parseFloat(document.getElementById('sub-liver').value) || 0;
+  if (sg > 0 || sl > 0) setTimeout(function(){
+    if (!confirm('ガツ ' + sg + 'ケース・レバー ' + sl + 'ケースも「発注した」にしますか？' + '\n' + 'OK＝数を 0 に戻します（次は、この後の出庫から数えます）。' + '\n' + 'キャンセル＝そのまま（後で「発注した」を押せます）。')) return;
+    subPost({ type:'sub_done' }).then(function(d){
+      if (!d || !d.ok) throw new Error('ng');
+      subShow(d, true);
+      document.getElementById('sub-note').textContent = '✅ 発注した印を付けました（' + (d.marked || 0) + '件）。次は、この後の出庫から数えます。';
+    }).catch(function(){ alert('印を付けられませんでした。電波を見て、「発注した」のボタンを押してください。'); });
+  }, 300);
 });
 
 // ── シュエリー分（ガツ・レバー）：スプレッドシートから、次の発注のケース数を読む（2026-10-13） ──
