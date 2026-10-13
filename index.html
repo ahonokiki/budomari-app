@@ -710,6 +710,19 @@
       <label>副産物・パーツ（骨など発注用／数量を入れた行だけ発注に入る）</label>
       <div class="byprod" id="bp-list"></div>
       <input type="text" id="bp-other" placeholder="その他（自由記入・そのまま発注に入る）" style="width:100%;margin-top:8px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+      <!-- シュエリー分（ガツ・レバー）：スプレッドシートから、次の発注のケース数が入る（2026-10-13） -->
+      <div id="sub-box" style="margin-top:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:#fafbfd;">
+        <div style="font-weight:700;font-size:14px;">シュエリー分（ガツ・レバー）</div>
+        <div id="sub-note" style="font-size:12.5px;color:#7a869a;margin:3px 0 8px;">数を読んでいます…</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:15px;">
+          <label>ガツ10kg× <input type="number" id="sub-gatsu" inputmode="numeric" min="0" step="1" placeholder="0" style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;text-align:right;outline:none;"> ケース</label>
+          <label>レバー10kg× <input type="number" id="sub-liver" inputmode="numeric" min="0" step="1" placeholder="0" style="width:64px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;text-align:right;outline:none;"> ケース</label>
+        </div>
+        <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button type="button" id="sub-done" style="padding:9px 14px;border:0;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--accent2);color:#fff;">✅ ガツ・レバーを発注した（数を 0 に戻す）</button>
+          <button type="button" id="sub-undo" style="padding:9px 14px;border:0;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;background:#fff;color:#556;border:1.5px solid var(--border);">取り消す</button>
+        </div>
+      </div>
     </div>
 
     <!-- 発注（預け連絡）コピペ -->
@@ -1425,6 +1438,10 @@ function buildMessage(){
     const v = el ? el.value : '';
     if (v && parseFloat(v) > 0) bp.push(it.name + v + it.unit);
   });
+  [['sub-gatsu','ガツ10kg×'],['sub-liver','レバー10kg×']].forEach(function(p){      // シュエリー分
+    const e = document.getElementById(p[0]); const v = e ? e.value : '';
+    if (v && parseFloat(v) > 0) bp.push(p[1] + v + 'ケース');
+  });
   const other = document.getElementById('bp-other').value.trim();
   if (other) bp.push(other);
   if (bp.length) s += '\n' + bp.join('\n') + '\n';
@@ -1443,6 +1460,47 @@ document.getElementById('msg-copy').addEventListener('click', function(){
   setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
 });
 
+// ── シュエリー分（ガツ・レバー）：スプレッドシートから、次の発注のケース数を読む（2026-10-13） ──
+//   発注書アプリが、シュエリーさんへ出た分を送って来る → ここで「まだ発注していない分」を 10kg のケースで出す（端数は切り上げ）。
+//   「発注した」を押すと、その時までの分に印が付いて、数が 0 に戻る。読めない時は、手で入れる。
+function subPost(body){
+  const url = loadWebhook();
+  if (!url) return Promise.reject(new Error('no url'));
+  return fetch(url, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(body) }).then(function(r){ return r.json(); });
+}
+function subShow(d, fill){
+  const g = (d.items || {})['ガツ'] || { kg:0, cases:0 }, l = (d.items || {})['レバー'] || { kg:0, cases:0 };
+  if (fill) {
+    document.getElementById('sub-gatsu').value = g.cases > 0 ? g.cases : '';
+    document.getElementById('sub-liver').value = l.cases > 0 ? l.cases : '';
+  }
+  const md = function(x){ return x ? (parseInt(x.slice(5,7),10) + '/' + parseInt(x.slice(8,10),10)) : ''; };
+  document.getElementById('sub-note').textContent = (g.kg || l.kg)
+    ? ('まだ発注していない出庫：ガツ ' + g.kg + 'kg・レバー ' + l.kg + 'kg（' + md(d.to) + ' の伝票まで）')
+    : ('まだ発注していない出庫は、ありません' + (d.done ? '（前の発注 ' + md(d.done) + '）' : ''));
+}
+function subLoad(){
+  subPost({ type:'sub_get' }).then(function(d){ if (d && d.ok) subShow(d, true); else throw new Error('ng'); })
+    .catch(function(){ document.getElementById('sub-note').textContent = '数を読めませんでした（手で入れてください）'; });
+}
+document.getElementById('sub-done').addEventListener('click', function(){
+  if (!confirm('ガツ・レバーを「発注した」にします。' + '\n' + '今までの出庫の分は、次から数えません。よろしいですか？')) return;
+  const b = this; b.disabled = true;
+  subPost({ type:'sub_done' }).then(function(d){
+    if (!d || !d.ok) throw new Error('ng');
+    subShow(d, true);
+    document.getElementById('sub-note').textContent = '✅ 発注した印を付けました（' + (d.marked || 0) + '件）。次は、この後の出庫から数えます。';
+  }).catch(function(){ alert('印を付けられませんでした。電波を見て、もう一度押してください。'); }).then(function(){ b.disabled = false; });
+});
+document.getElementById('sub-undo').addEventListener('click', function(){
+  if (!confirm('いちばん近い「発注した」の印を取り消します。よろしいですか？')) return;
+  const b = this; b.disabled = true;
+  subPost({ type:'sub_undo' }).then(function(d){
+    if (!d || !d.ok) throw new Error('ng');
+    subShow(d, true);
+  }).catch(function(){ alert('取り消せませんでした。電波を見て、もう一度押してください。'); }).then(function(){ b.disabled = false; });
+});
+
 // ── ログイン処理 ──
 const PASSWORD = '2317';
 const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
@@ -1451,6 +1509,7 @@ const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 // GASをデプロイして出てきたURLを、画面下の「⚙ 記録先スプレッドシート設定」から貼り付けます。
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec'; // 本番＝記録先スプレッドシート（既定。⚙設定で上書き可）
 function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL || ''; }
+try { subLoad(); } catch(e){}      // シュエリー分（ガツ・レバー）の数を読む
 // その時のパーツ係数（設定の値）も一緒に記録する。後から「この日の計算はどの係数だったか」が分かるように（2026-10-12）
 function coefForSheet() {
   try { return JSON.stringify({ coef: (APPCFG.coef || []).map(function(c){ return { name: c.name, k: Number(c.k) }; }), hamCoef: Number(APPCFG.hamCoef) }); }
