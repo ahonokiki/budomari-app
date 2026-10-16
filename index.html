@@ -1178,6 +1178,7 @@ function saveDraft(){
   draftFields().forEach(function(id){ const el = document.getElementById(id); if (el) d[id] = el.value; });
   d.type = currentType;
   localStorage.setItem('budomari_draft', JSON.stringify(d));
+  localStorage.setItem('budomari_draft_ts', String(Date.now()));
 }
 function restoreDraft(){
   try {
@@ -1458,6 +1459,7 @@ document.getElementById('msg-copy').addEventListener('click', function(){
   const b = this, o = b.innerHTML;
   b.classList.add('copied'); b.innerHTML = '<span>✅</span> コピーしました！';
   setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
+  draftPut();
   // シュエリー分：コピーしたら、ガツ・レバーも「発注した」にするかを聞く（押し忘れを減らす。2026-10-13）
   const sg = parseFloat(document.getElementById('sub-gatsu').value) || 0, sl = parseFloat(document.getElementById('sub-liver').value) || 0;
   if (sg > 0 || sl > 0) setTimeout(function(){
@@ -1489,6 +1491,39 @@ function subShow(d, fill){
     ? ('まだ発注していない出庫：ガツ ' + g.kg + 'kg・レバー ' + l.kg + 'kg（' + md(d.to) + ' の伝票まで）')
     : ('まだ発注していない出庫は、ありません' + (d.done ? '（前の発注 ' + md(d.done) + '）' : ''));
 }
+// ── 入力中の物を、スマホとパソコンで共有（2026-10-17 賢さん）──
+// 「発注をコピー」を押した時に、途中の物をスプレッドシート（GAS）へ置く。開いた時、他の機械の方が新しければ帯で知らせる
+function draftSnap(){
+  const g = function(k){ try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e){ return null; } };
+  return { ts: Date.now(), draft: g('budomari_draft'), lots: g('budomari_lots'), heads: g('budomari_heads_override'), msg: document.getElementById('msg-text').value };
+}
+function draftPut(){
+  const s = draftSnap(); localStorage.setItem('budomari_draft_ts', String(s.ts));
+  subPost({ type:'draft_put', snap: s }).catch(function(){});
+}
+function draftApply(s){
+  if (s.draft) localStorage.setItem('budomari_draft', JSON.stringify(s.draft)); else localStorage.removeItem('budomari_draft');
+  if (s.lots) localStorage.setItem('budomari_lots', JSON.stringify(s.lots)); else localStorage.removeItem('budomari_lots');
+  if (s.heads) localStorage.setItem('budomari_heads_override', JSON.stringify(s.heads)); else localStorage.removeItem('budomari_heads_override');
+  localStorage.setItem('budomari_draft_ts', String(s.ts));
+  try { sessionStorage.setItem('budomari_msg', s.msg || ''); } catch(e){}
+  location.reload();
+}
+function draftCheck(){
+  subPost({ type:'draft_get' }).then(function(d){
+    if (!d || !d.ok || !d.snap || !d.snap.ts) return;
+    const mine = Number(localStorage.getItem('budomari_draft_ts') || 0);
+    if (d.snap.ts <= mine + 1000) return;
+    const t = new Date(d.snap.ts), when = (t.getMonth()+1) + '/' + t.getDate() + ' ' + t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0');
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:sticky;top:0;z-index:999;background:#c0392b;color:#fff;font-weight:bold;padding:10px 14px;text-align:center;cursor:pointer;font-size:15px';
+    bar.textContent = '📲 ほかの機械で ' + when + ' に入れた途中の物があります［ここを押すと読み込む］';
+    bar.onclick = function(){ if (confirm('ほかの機械で入れた途中の物を読み込みます。' + String.fromCharCode(10) + 'この機械の入力中の物は置き換わります。よろしいですか？')) draftApply(d.snap); };
+    document.body.insertBefore(bar, document.body.firstChild);
+  }).catch(function(){});
+}
+try { const m = sessionStorage.getItem('budomari_msg'); if (m != null) { sessionStorage.removeItem('budomari_msg'); setTimeout(function(){ document.getElementById('msg-text').value = m; }, 0); } } catch(e){}
+setTimeout(draftCheck, 800);
 function subLoad(){
   subPost({ type:'sub_get' }).then(function(d){ if (d && d.ok) subShow(d, true); else throw new Error('ng'); })
     .catch(function(){ document.getElementById('sub-note').textContent = '数を読めませんでした（手で入れてください）'; });
