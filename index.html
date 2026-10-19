@@ -1027,7 +1027,7 @@ function renderCoefInputs(){
 }
 // ハムの部位＝先頭「ハムロース」(ハムロース係数)＋パーツと同じ全部位（ロース含む・同じ係数）
 function hamParts(){
-  return [{ name:'ハムロース', k:(APPCFG.hamCoef != null ? APPCFG.hamCoef : 2.5) }].concat(APPCFG.coef || []);
+  return (APPCFG.coef || []).slice();      // 「ハムロース」はやめてロースにまとめた（10/19 賢さん・全体の歩留まりの計算が大事）
 }
 function hamId(i){ return 'hamw-' + i; }
 function renderHamInputs(){
@@ -1300,7 +1300,8 @@ function renderCoefSettings(){
   document.getElementById('set-coef-add').style.display = setEditing ? 'block' : 'none';
   if (setEditing) {
     // ハムロース（係数リスト先頭・固定／計算は出来上がりハム重量を使用）
-    let html = '<div class="scard">'
+    let html = '';      // ハムロースの係数の欄はやめた（10/19）
+    if (false) html = '<div class="scard">'
       + '<div class="scard-head"><span class="scard-id">ハム</span></div>'
       + '<div class="scard-row"><span class="scard-label">部位名</span><input type="text" value="ハムロース" readonly style="background:var(--input-bg);color:var(--muted);"></div>'
       + '<div class="scard-row split"><div class="scard-cell"><label>係数</label><input id="set-hamcoef" type="number" inputmode="decimal" min="0" step="0.01" value="' + (editHamCoef === '' || editHamCoef == null ? '' : editHamCoef) + '" placeholder="―"></div></div>'
@@ -1319,7 +1320,7 @@ function renderCoefSettings(){
     }).join('');
     cont.innerHTML = html;
   } else {
-    let chips = '<div class="bp-row"><span class="nm">ハムロース</span><span class="su" style="color:var(--accent2);">×' + (APPCFG.hamCoef != null ? APPCFG.hamCoef : 2.5) + '</span></div>';
+    let chips = '';      // ハムロースはやめた（10/19）
     chips += (APPCFG.coef || []).map(function(c){
       return '<div class="bp-row"><span class="nm">' + escHtml(c.name) + '</span><span class="su" style="color:var(--accent2);">×' + c.k + '</span></div>';
     }).join('');
