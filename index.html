@@ -731,6 +731,13 @@
       <button class="calc-btn" id="msg-build" style="background:var(--accent2); margin-top:0;"><span>✉️</span> 発注を作成</button>
       <textarea id="msg-text" rows="11" style="margin-top:10px;"></textarea>
       <button class="copy-btn" id="msg-copy" style="width:100%; margin:10px 0 0;"><span>📋</span> 発注をコピー</button>
+      <button class="copy-btn" id="msg-sms" style="width:100%; margin:8px 0 0; background:#1f6f3d;"><span>📱</span> 中山さんへ送る（メッセージが開きます）</button>
+      <div style="margin-top:10px;padding:10px;border:1px dashed #9aa;border-radius:8px">
+        <div style="font-weight:700;margin-bottom:4px">追加・変更を送る</div>
+        <textarea id="add-text" rows="2" style="width:100%;box-sizing:border-box;font-size:15px;font-family:inherit" placeholder="例：脂20kg 追加お願いします"></textarea>
+        <button class="copy-btn" id="add-sms" style="width:100%; margin:6px 0 0; background:#1f6f3d;"><span>📱</span> 追加・変更を中山さんへ送る</button>
+        <div style="font-size:12px;color:#666;margin-top:4px">※ 送信は、開いたメッセージで押してください。<a href="#" id="tel-change">中山さんの番号を変える</a></div>
+      </div>
     </div>
 
     <!-- ④ 種類別　出来上がり重量（後日入力） -->
@@ -1460,7 +1467,40 @@ document.getElementById('msg-copy').addEventListener('click', function(){
   b.classList.add('copied'); b.innerHTML = '<span>✅</span> コピーしました！';
   setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
   draftPut();
-  // シュエリー分：コピーしたら、ガツ・レバーも「発注した」にするかを聞く（押し忘れを減らす。2026-10-13）
+  askSubDone();
+});
+// 中山さんへ送る：番号と文が入ったメッセージを開く（送信は賢さんが押す。番号は公開のコードに書かず、このスマホにだけ覚える。2026-10-19）
+function nakaTel(force){
+  let tel = '';
+  try { tel = localStorage.getItem('nakayama_tel') || ''; } catch(e) {}
+  if (!tel || force) {
+    const v = prompt('中山さんの携帯の番号を入れてください（このスマホにだけ覚えます）', tel);
+    if (v === null) return '';
+    tel = v.replace(/[^0-9+]/g, '');
+    try { localStorage.setItem('nakayama_tel', tel); } catch(e) {}
+  }
+  return tel;
+}
+function openSms(text){
+  const tel = nakaTel(false); if (!tel) return;
+  location.href = 'sms:' + tel + '&body=' + encodeURIComponent(text);
+}
+document.getElementById('msg-sms').addEventListener('click', function(){
+  const t = document.getElementById('msg-text');
+  if (!t.value.trim()) buildMessage();
+  draftPut();
+  openSms(t.value);
+  setTimeout(askSubDone, 1500);
+});
+document.getElementById('add-sms').addEventListener('click', function(){
+  const v = document.getElementById('add-text').value.trim();
+  if (!v) { alert('送る文を書いてください（例：脂20kg 追加お願いします）'); return; }
+  openSms('若林商店です。
+' + v);
+});
+document.getElementById('tel-change').addEventListener('click', function(e){ e.preventDefault(); nakaTel(true); });
+function askSubDone(){
+  // シュエリー分：送った・コピーしたら、ガツ・レバーも「発注した」にするかを聞く（押し忘れを減らす。2026-10-13）
   const sg = parseFloat(document.getElementById('sub-gatsu').value) || 0, sl = parseFloat(document.getElementById('sub-liver').value) || 0;
   if (sg > 0 || sl > 0) setTimeout(function(){
     if (!confirm('ガツ ' + sg + 'ケース・レバー ' + sl + 'ケースも「発注した」にしますか？' + '\n' + 'OK＝数を 0 に戻します（次は、この後の出庫から数えます）。' + '\n' + 'キャンセル＝そのまま（後で「発注した」を押せます）。')) return;
@@ -1470,7 +1510,7 @@ document.getElementById('msg-copy').addEventListener('click', function(){
       document.getElementById('sub-note').textContent = '✅ 発注した印を付けました（' + (d.marked || 0) + '件）。次は、この後の出庫から数えます。';
     }).catch(function(){ alert('印を付けられませんでした。電波を見て、「発注した」のボタンを押してください。'); });
   }, 300);
-});
+}
 
 // ── シュエリー分（ガツ・レバー）：スプレッドシートから、次の発注のケース数を読む（2026-10-13） ──
 //   発注書アプリが、シュエリーさんへ出た分を送って来る → ここで「まだ発注していない分」を 10kg のケースで出す（端数は切り上げ）。
