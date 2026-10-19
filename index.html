@@ -617,7 +617,7 @@
 <body>
 
 <!-- ログイン画面 -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <h2>枝肉歩留まり計算</h2>
   <p>株式会社若林商店</p>
   <div class="login-card">
@@ -1619,7 +1619,7 @@ function thisMonth() {
 
 // 同月ログイン済みならスキップ
 const savedMonth = localStorage.getItem('login_month');
-if (savedMonth === thisMonth()) {
+if (true) {      // 最初のログインはやめた（URL は賢さんだけ・キャッシュが消えると毎回聞かれて面倒・10/19 賢さん）
   document.getElementById('login-screen').style.display = 'none';
 }
 
