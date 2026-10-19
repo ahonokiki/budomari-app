@@ -1495,8 +1495,7 @@ document.getElementById('msg-sms').addEventListener('click', function(){
 document.getElementById('add-sms').addEventListener('click', function(){
   const v = document.getElementById('add-text').value.trim();
   if (!v) { alert('送る文を書いてください（例：脂20kg 追加お願いします）'); return; }
-  openSms('若林商店です。
-' + v);
+  openSms('若林商店です。' + String.fromCharCode(10) + v);
 });
 document.getElementById('tel-change').addEventListener('click', function(e){ e.preventDefault(); nakaTel(true); });
 function askSubDone(){
