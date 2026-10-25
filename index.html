@@ -652,6 +652,14 @@
   <div class="input-card">
     <h2>入力</h2>
 
+    <!-- 発注日（2026-10-25 賢さん「発注日がわかるように・一番上に」） -->
+    <div class="field">
+      <label>発注日</label>
+      <div class="input-row">
+        <input type="date" id="order-date">
+      </div>
+    </div>
+
     <!-- ① 加重平均単価 -->
     <div class="field">
       <label>枝肉加重平均単価</label>
@@ -1175,7 +1183,7 @@ try { const L = JSON.parse(localStorage.getItem('budomari_lots') || 'null'); if 
 
 // ── 入力途中の自動保存（下書き）：加重平均・出来上がり・副産物も打った瞬間に保存 ──
 function draftFields(){
-  const fixed = ['weighted-price','output-set','output-ham','output-parts','bp-other'];
+  const fixed = ['order-date','weighted-price','output-set','output-ham','output-parts','bp-other'];
   return fixed.concat(APPCFG.items.map(function(_, i){ return bpId(i); }))
               .concat((APPCFG.coef || []).map(function(_, i){ return coefId(i); }))
               .concat(hamParts().map(function(_, i){ return hamId(i); }));
@@ -1191,6 +1199,8 @@ function restoreDraft(){
   try {
     const d = JSON.parse(localStorage.getItem('budomari_draft') || '{}');
     draftFields().forEach(function(id){ const el = document.getElementById(id); if (el && d[id] != null) el.value = d[id]; });
+    const od = document.getElementById('order-date');
+    if (od && !od.value) { const t = new Date(Date.now() + 9*3600e3); od.value = t.toISOString().slice(0,10); }   // 空なら今日
     if (d.type) {
       currentType = d.type;
       document.querySelectorAll('.type-btn').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-type') === d.type); });
@@ -1860,7 +1870,7 @@ function calculate() {
   const unitCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(branch * wPrice / output) : null;
   const processingCostSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round((branch * wPrice + heads * FEE()) / output) : null;
   const targetPriceSave = (!isNaN(wPrice) && wPrice > 0) ? Math.round(processingCostSave / (1 - marginRate / 100)) : null;
-  const entry = { heads, branch, lots: JSON.parse(JSON.stringify(window.__getLots())), headsOverride: window.__getHeadsOverride(), output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
+  const entry = { heads, branch, lots: JSON.parse(JSON.stringify(window.__getLots())), headsOverride: window.__getHeadsOverride(), output, oSet, oHam, oParts, yield_: yieldStr, label, type: currentType, orderDate: ((document.getElementById('order-date')||{}).value || ''), wPrice: (!isNaN(wPrice) && wPrice > 0) ? wPrice : null, unitCost: unitCostSave, processingCost: processingCostSave, targetPrice: targetPriceSave, margin: marginRate, ts: Date.now() };
   history.unshift(entry);
   if (history.length > 20) history = history.slice(0, 20);
   localStorage.setItem('budomari_history', JSON.stringify(history));
