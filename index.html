@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><style>html{touch-action:manipulation}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"><style>/* スマホで2回たたいてもズームしない・入力欄でも拡大しない（2026-10-18 賢さん） */html{touch-action:manipulation}</style>
 <title>枝肉歩留まり計算</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
@@ -669,19 +669,19 @@
       <div class="input-row branch-open" data-type="set" style="cursor:pointer; margin-bottom:8px;">
         <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">セット</span>
         <input type="number" id="branch-set" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
-        <span class="unit" style="color:var(--accent2); white-space:nowrap;"><input type="number" id="head-set" class="head-in" inputmode="numeric" min="0" step="1" placeholder="0" style="width:32px; text-align:right; border:1px solid var(--border); border-radius:6px; padding:3px 4px; font-weight:700; color:var(--accent2); background:#fff; font-family:inherit;">頭</span>
+        <span class="unit" style="color:var(--accent2); white-space:nowrap;"><input type="number" id="head-set" class="head-in" inputmode="numeric" min="0" step="1" placeholder="0" style="width:48px; text-align:right; border:1px solid var(--border); border-radius:6px; padding:3px 4px; font-weight:700; color:var(--accent2); background:#fff; font-family:inherit;">頭</span>
         <span class="unit">kg ▸</span>
       </div>
       <div class="input-row branch-open" data-type="ham" style="cursor:pointer; margin-bottom:8px;">
         <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">ハム</span>
         <input type="number" id="branch-ham" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
-        <span class="unit" style="color:var(--accent2); white-space:nowrap;"><input type="number" id="head-ham" class="head-in" inputmode="numeric" min="0" step="1" placeholder="0" style="width:32px; text-align:right; border:1px solid var(--border); border-radius:6px; padding:3px 4px; font-weight:700; color:var(--accent2); background:#fff; font-family:inherit;">頭</span>
+        <span class="unit" style="color:var(--accent2); white-space:nowrap;"><input type="number" id="head-ham" class="head-in" inputmode="numeric" min="0" step="1" placeholder="0" style="width:48px; text-align:right; border:1px solid var(--border); border-radius:6px; padding:3px 4px; font-weight:700; color:var(--accent2); background:#fff; font-family:inherit;">頭</span>
         <span class="unit">kg ▸</span>
       </div>
       <div class="input-row branch-open" data-type="parts" style="cursor:pointer;">
         <span class="unit" style="padding:0 2px 0 12px; min-width:42px; text-align:left;">パーツ</span>
         <input type="number" id="branch-parts" readonly placeholder="タップして入力" style="cursor:pointer; background:transparent;">
-        <span class="unit" style="color:var(--accent2); white-space:nowrap;"><input type="number" id="head-parts" class="head-in" inputmode="numeric" min="0" step="1" placeholder="0" style="width:32px; text-align:right; border:1px solid var(--border); border-radius:6px; padding:3px 4px; font-weight:700; color:var(--accent2); background:#fff; font-family:inherit;">頭</span>
+        <span class="unit" style="color:var(--accent2); white-space:nowrap;"><input type="number" id="head-parts" class="head-in" inputmode="numeric" min="0" step="1" placeholder="0" style="width:48px; text-align:right; border:1px solid var(--border); border-radius:6px; padding:3px 4px; font-weight:700; color:var(--accent2); background:#fff; font-family:inherit;">頭</span>
         <span class="unit">kg ▸</span>
       </div>
     </div>
