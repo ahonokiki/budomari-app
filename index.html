@@ -1200,7 +1200,7 @@ function restoreDraft(){
     const d = JSON.parse(localStorage.getItem('budomari_draft') || '{}');
     draftFields().forEach(function(id){ const el = document.getElementById(id); if (el && d[id] != null) el.value = d[id]; });
     const od = document.getElementById('order-date');
-    if (od && !od.value) { const t = new Date(Date.now() + 9*3600e3); od.value = t.toISOString().slice(0,10); }   // 空なら今日
+    if (od) { const t = new Date(Date.now() + 9*3600e3).toISOString().slice(0,10); if (!od.value || od.value < t) od.value = t; }   // 空・前の日なら今日（日が変わったら今日に戻す・2026-10-27 賢さん）
     if (d.type) {
       currentType = d.type;
       document.querySelectorAll('.type-btn').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-type') === d.type); });
