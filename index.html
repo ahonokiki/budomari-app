@@ -1005,7 +1005,28 @@ let APPCFG = (function(){
   } catch(e){}
   return d;
 })();
-function saveConfig(){ localStorage.setItem('budomari_config', JSON.stringify(APPCFG)); }
+function saveConfig(){
+  localStorage.setItem('budomari_config', JSON.stringify(APPCFG));
+  cfgPush();
+}
+// ── 設定（加工賃・品目・曜日・係数・粗利%）を、どの機械・どのブラウザでも同じにする（2026-10-29 賢さん）──
+// 直したら GAS に置く。開いた時、GAS の方が新しければ、この機械の設定を自動で置き換える。
+function cfgPush(){
+  const ts = Date.now(); localStorage.setItem('budomari_config_ts', String(ts));
+  try { subPost({ type:'config_put', cfg: { ts: ts, config: APPCFG, margin: localStorage.getItem('budomari_margin') } }).catch(function(){}); } catch(e){}
+}
+function cfgPull(){
+  try { subPost({ type:'config_get' }).then(function(d){
+    const mine = Number(localStorage.getItem('budomari_config_ts') || 0);
+    if (!d || !d.ok || !d.cfg || !d.cfg.ts){ if (localStorage.getItem('budomari_config')) cfgPush(); return; }      // まだ GAS に無い＝この機械の設定を置く
+    if (d.cfg.ts <= mine) { if (d.cfg.ts < mine) cfgPush(); return; }
+    if (d.cfg.config) localStorage.setItem('budomari_config', JSON.stringify(d.cfg.config));
+    if (d.cfg.margin != null) localStorage.setItem('budomari_margin', d.cfg.margin);
+    localStorage.setItem('budomari_config_ts', String(d.cfg.ts));
+    if (!sessionStorage.getItem('budomari_cfg_reloaded')) { sessionStorage.setItem('budomari_cfg_reloaded', '1'); location.reload(); }
+  }).catch(function(){}); } catch(e){}
+}
+setTimeout(cfgPull, 500);
 function FEE(){ return Number(APPCFG.fee) || 3500; }
 function escHtml(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function bpId(i){ return 'bp-' + i; }
@@ -1055,7 +1076,7 @@ document.getElementById('margin-input').addEventListener('input', function() {
   const val = parseFloat(this.value);
   if (!isNaN(val) && val >= 0 && val < 100) {
     marginRate = val;
-    localStorage.setItem('budomari_margin', marginRate);
+    localStorage.setItem('budomari_margin', marginRate); try { cfgPush(); } catch(e){}
   }
 });
 
