@@ -1626,6 +1626,23 @@ const FORM_URL = 'https://forms.gle/hiccoDqoNcJzVYLF8';
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGWC4v94Mem4nRDy5liPG-nEmhmKFhCq2xdVfvUEU9PKrwZ4K0VZlQWxc2-jWa0eUB/exec'; // 本番＝記録先スプレッドシート（既定。⚙設定で上書き可）
 function loadWebhook() { return localStorage.getItem('budomari_webhook') || WEBHOOK_URL || ''; }
 try { subLoad(); } catch(e){}      // シュエリー分（ガツ・レバー）の数を読む
+// 写真（中山様の伝票）から計算した結果を、下の計算履歴に入れる（2026-11-06 賢さん）
+function photoHistLoad(){
+  subPost({ type:'hist_get' }).then(function(d){
+    if (!d || !d.ok || !d.items) return;
+    const have = {}; historyAll.concat(history).forEach(function(e){ have[e.ts] = 1; });
+    let n = 0;
+    d.items.forEach(function(e){ if (e && e.ts && !have[e.ts]) { history.push(e); historyAll.push(e); n++; } });
+    if (!n) return;
+    const byTs = function(a, b){ return b.ts - a.ts; };
+    history.sort(byTs); historyAll.sort(byTs);
+    history = history.slice(0, 20); historyAll = historyAll.slice(0, 100);
+    localStorage.setItem('budomari_history', JSON.stringify(history));
+    localStorage.setItem('budomari_history_all', JSON.stringify(historyAll));
+    renderHistory();
+  }).catch(function(){});
+}
+try { photoHistLoad(); } catch(e){}
 // その時のパーツ係数（設定の値）も一緒に記録する。後から「この日の計算はどの係数だったか」が分かるように（2026-10-12）
 function coefForSheet() {
   try { return JSON.stringify({ coef: (APPCFG.coef || []).map(function(c){ return { name: c.name, k: Number(c.k) }; }), hamCoef: Number(APPCFG.hamCoef) }); }
