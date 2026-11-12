@@ -1489,7 +1489,10 @@ function buildMessage(){
   document.getElementById('msg-text').value = s;
 }
 document.getElementById('msg-build').addEventListener('click', buildMessage);
+// 枝重が空のまま送らない（11/12 賢さん：入れ忘れ防止）
+function edaOk(){ if (parseFloat(document.getElementById('branch').value) > 0) return true; return confirm('枝重（kg）が入っていません。このまま送りますか？'); }
 document.getElementById('msg-copy').addEventListener('click', function(){
+  if (!edaOk()) return;
   const t = document.getElementById('msg-text');
   if (!t.value.trim()) buildMessage();
   t.focus(); t.select(); t.setSelectionRange(0, 99999);
@@ -1518,6 +1521,7 @@ function openSms(text){
   location.href = 'sms:' + tel + '&body=' + encodeURIComponent(text);
 }
 document.getElementById('msg-sms').addEventListener('click', function(){
+  if (!edaOk()) return;
   const t = document.getElementById('msg-text');
   if (!t.value.trim()) buildMessage();
   draftPut();
