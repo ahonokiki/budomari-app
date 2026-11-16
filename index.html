@@ -1489,6 +1489,20 @@ function buildMessage(){
   document.getElementById('msg-text').value = s;
 }
 document.getElementById('msg-build').addEventListener('click', buildMessage);
+// 預け連絡を送る・コピーした時に、記録（スプレッドシート）にも1行残す（写真の計算に使う・2026-11-16 賢さん）
+function azukeRecord(){
+  try {
+    const n = parseFloat(document.getElementById('heads').value) || 0, b = parseFloat(document.getElementById('branch').value) || 0, w = parseFloat(document.getElementById('weighted-price').value) || 0;
+    if (!n || !w) return;
+    const lots = {}; ['set','ham','parts'].forEach(function(t){ const h = window.__lotHeads ? window.__lotHeads(t) : 0; if (h > 0) lots[t] = { 頭: h, 枝: window.__lotSum ? Math.round(window.__lotSum(t) * 10) / 10 : null }; });
+    const key = [new Date().toDateString(), n, b, w, JSON.stringify(lots)].join('|');
+    if (localStorage.getItem('budomari_azuke_last') === key) return;          // 同じ日に同じ中身を2回残さない（コピーと送るの両方を押した時）
+    const td = new Date();
+    subPost({ type:'add_record', record:{ ts: td.toISOString(), label: '預け連絡 ' + (td.getMonth()+1) + '/' + td.getDate() + ' ' + n + '頭', type: 'azuke',
+      heads: n, branch: b, wPrice: w, coef: JSON.stringify(lots), orderDate: td.toISOString().slice(0,10) } })
+      .then(function(d){ if (d && d.ok) localStorage.setItem('budomari_azuke_last', key); }).catch(function(){});
+  } catch (e) {}
+}
 // 枝重が空のまま送らない（11/12 賢さん：入れ忘れ防止）
 function edaOk(){ if (parseFloat(document.getElementById('branch').value) > 0) return true; return confirm('枝重（kg）が入っていません。このまま送りますか？'); }
 document.getElementById('msg-copy').addEventListener('click', function(){
@@ -1498,6 +1512,7 @@ document.getElementById('msg-copy').addEventListener('click', function(){
   t.focus(); t.select(); t.setSelectionRange(0, 99999);
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value);
   else document.execCommand('copy');
+  azukeRecord();
   const b = this, o = b.innerHTML;
   b.classList.add('copied'); b.innerHTML = '<span>✅</span> コピーしました！';
   setTimeout(function(){ b.classList.remove('copied'); b.innerHTML = o; }, 2000);
@@ -1525,6 +1540,7 @@ document.getElementById('msg-sms').addEventListener('click', function(){
   const t = document.getElementById('msg-text');
   if (!t.value.trim()) buildMessage();
   draftPut();
+  azukeRecord();
   openSms(t.value);
   setTimeout(askSubDone, 1500);
 });
